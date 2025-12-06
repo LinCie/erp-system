@@ -1,3 +1,4 @@
+import { jsonArrayFrom } from "kysely/helpers/mysql";
 import { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
 import { safeBigintToNumber } from "@/utilities/transform.utility.ts";
 import {
@@ -9,7 +10,7 @@ import { ItemEntity as Item } from "../domain/item.entity.ts";
 class ItemRepository implements IItemRepository {
   constructor(private readonly db: PersistenceType) {}
 
-  async getMany(params: GetManyItemsProps) {
+  async getMany(props: GetManyItemsProps) {
     const {
       spaceId,
       page = 1,
@@ -19,7 +20,8 @@ class ItemRepository implements IItemRepository {
       sort,
       order,
       type,
-    } = params;
+      withInventory = true,
+    } = props;
 
     let query = this.db
       .selectFrom("items")
@@ -55,6 +57,18 @@ class ItemRepository implements IItemRepository {
           "images",
         ]);
         break;
+    }
+
+    // Include inventory data using a subquery if requested
+    if (withInventory) {
+      query = query.select((eb) => [
+        jsonArrayFrom(
+          eb
+            .selectFrom("inventories")
+            .select(["space_id", "balance", "notes", "status", "cost_per_unit"])
+            .whereRef("inventories.item_id", "=", "items.id"),
+        ).as("inventories"),
+      ]);
     }
 
     return await query.execute() as Item[];

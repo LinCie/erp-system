@@ -4,6 +4,7 @@ import { ItemEntity as Item } from "../domain/item.entity.ts";
 type GetManyItemsProps = GetManyPropsType & {
   spaceId: number;
   type: "full" | "partial";
+  withInventory?: boolean;
 };
 
 interface IItemRepository {

@@ -121,8 +121,8 @@ import { ${pascal}Entity as ${pascal} } from "../domain/${name}.entity.ts";
 class ${pascal}Repository implements I${pascal}Repository {
   constructor(private readonly db: PersistenceType) {}
 
-  async getMany(params: GetMany${pascal}sProps) {
-    const { page = 1, limit = 10, status = "active" } = params;
+  async getMany(props: GetMany${pascal}sProps) {
+    const { page = 1, limit = 10, status = "active" } = props;
 
     const result = await this.db
       .selectFrom("${name}s")
