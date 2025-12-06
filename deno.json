@@ -1,0 +1,19 @@
+{
+  "imports": {
+    "@/": "./src/",
+    "@google/genai": "npm:@google/genai@^1.31.0",
+    "hono": "jsr:@hono/hono@^4.10.7",
+    "kysely": "npm:kysely@^0.28.8",
+    "mysql2": "npm:mysql2",
+    "zod": "npm:zod@^4.1.13"
+  },
+  "tasks": {
+    "start": "deno run --allow-net  src/main.ts",
+    "dev": "deno run --watch --allow-env --allow-net --env-file ./src/main.ts"
+  },
+  "compilerOptions": {
+    "jsx": "precompile",
+    "jsxImportSource": "hono/jsx",
+    "strict": true
+  }
+}
