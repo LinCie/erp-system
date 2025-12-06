@@ -1,7 +1,7 @@
-interface ItemEntity {
-  id: number;
+import { BaseEntity } from "@/shared/domain/base.entity.ts";
+
+interface ItemEntity extends BaseEntity {
   name: string;
-  status: string;
 }
 
 export type { ItemEntity };

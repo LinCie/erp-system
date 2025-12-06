@@ -39,20 +39,20 @@ async function createModule(name: string) {
   // Entity
   await Deno.writeTextFile(
     `${modulePath}/domain/${name}.entity.ts`,
-    `interface ${pascal}Entity {
-  id: number;
-  name: string;
-  status: string;
-}
+    `
+import { BaseEntity } from "@/shared/domain/base.entity.ts";
+
+interface ${pascal}Entity extends BaseEntity {};
 
 export type { ${pascal}Entity };
-`,
+    `,
   );
 
   // Repository Interface
   await Deno.writeTextFile(
     `${modulePath}/application/${name}-repository.interface.ts`,
-    `import { GetManyPropsType } from "@/shared/application/types/get-all.type.ts";
+    `
+import { GetManyPropsType } from "@/shared/application/types/get-all.type.ts";
 import { ${pascal}Entity as ${pascal} } from "../domain/${name}.entity.ts";
 
 type GetMany${pascal}sProps = GetManyPropsType;
@@ -72,7 +72,8 @@ export type { GetMany${pascal}sProps, I${pascal}Repository };
   // Service
   await Deno.writeTextFile(
     `${modulePath}/application/${name}.service.ts`,
-    `import {
+    `
+import {
   GetMany${pascal}sProps,
   I${pascal}Repository,
 } from "./${name}-repository.interface.ts";
@@ -109,7 +110,8 @@ export { ${pascal}Service };
   // Repository
   await Deno.writeTextFile(
     `${modulePath}/infrastructure/${name}.repository.ts`,
-    `import { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
+    `
+import { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
 import {
   GetMany${pascal}sProps,
   I${pascal}Repository,
@@ -186,7 +188,8 @@ export { ${pascal}Repository };
   // Controller
   await Deno.writeTextFile(
     `${modulePath}/presentation/${name}.controller.ts`,
-    `import { Hono } from "hono";
+    `
+import { Hono } from "hono";
 import { ${pascal}Service } from "../application/${name}.service.ts";
 
 function define${pascal}Controller(service: ${pascal}Service) {
@@ -232,7 +235,8 @@ export { define${pascal}Controller };
   // Module
   await Deno.writeTextFile(
     `${modulePath}/presentation/${name}.module.ts`,
-    `import { getDatabase } from "@/shared/infrastructure/persistence/index.ts";
+    `
+import { getDatabase } from "@/shared/infrastructure/persistence/index.ts";
 import { ${pascal}Repository } from "../infrastructure/${name}.repository.ts";
 import { ${pascal}Service } from "../application/${name}.service.ts";
 import { define${pascal}Controller } from "./${name}.controller.ts";
