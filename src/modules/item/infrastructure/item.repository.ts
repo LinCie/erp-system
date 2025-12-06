@@ -1,7 +1,7 @@
 import { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
 import { safeBigintToNumber } from "@/utilities/transform.utility.ts";
 import {
-  GetAllItemsParams,
+  GetManyItemsProps,
   IItemRepository,
 } from "../application/item-repository.interface.ts";
 import { ItemEntity as Item } from "../domain/item.entity.ts";
@@ -9,7 +9,7 @@ import { ItemEntity as Item } from "../domain/item.entity.ts";
 class ItemRepository implements IItemRepository {
   constructor(private readonly db: PersistenceType) {}
 
-  async getMany(params: GetAllItemsParams) {
+  async getMany(params: GetManyItemsProps) {
     const {
       spaceId,
       page = 1,
