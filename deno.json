@@ -2,6 +2,8 @@
   "imports": {
     "@/": "./src/",
     "@google/genai": "npm:@google/genai@^1.31.0",
+    "@std/path": "jsr:@std/path@^1.1.3",
+    "@std/text": "jsr:@std/text@^1.0.16",
     "hono": "jsr:@hono/hono@^4.10.7",
     "kysely": "npm:kysely@^0.28.8",
     "mysql2": "npm:mysql2",
@@ -9,7 +11,8 @@
   },
   "tasks": {
     "start": "deno run --allow-net  src/main.ts",
-    "dev": "deno run --watch --allow-env --allow-net --env-file ./src/main.ts"
+    "dev": "deno run --watch --allow-env --allow-net --env-file ./src/main.ts",
+    "create:module": "deno run --allow-write --allow-read scripts/create-module.ts"
   },
   "compilerOptions": {
     "jsx": "precompile",
