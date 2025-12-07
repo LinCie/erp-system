@@ -5,12 +5,16 @@ import { AuthSecurity } from "../infrastructure/auth.security.ts";
 import { AuthService } from "../application/auth.service.ts";
 import { defineAuthController } from "./auth.controller.ts";
 
-const db = getDatabase();
-const redis = getRedis();
+async function createAuthModule() {
+  const db = getDatabase();
+  const redis = await getRedis();
 
-const authRepo = new AuthRepository(db, redis);
-const authSecurity = new AuthSecurity(authRepo);
-const authService = new AuthService(authRepo, authSecurity);
-const authController = defineAuthController(authService);
+  const authRepo = new AuthRepository(db, redis);
+  const authSecurity = new AuthSecurity(authRepo);
+  const authService = new AuthService(authRepo, authSecurity);
+  const authController = defineAuthController(authService);
 
-export { authController };
+  return { authController };
+}
+
+export { createAuthModule };
