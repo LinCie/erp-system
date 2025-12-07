@@ -16,8 +16,8 @@
     "zod": "npm:zod@^4.1.13"
   },
   "tasks": {
-    "start": "deno run --allow-net  src/main.ts",
-    "dev": "deno run --watch --allow-env --allow-net --env-file ./src/main.ts",
+    "start": "deno run --allow-net src/main.ts",
+    "dev": "deno run --watch --allow-all --env-file ./src/main.ts",
     "create:module": "deno run --allow-write --allow-read scripts/create-module.ts"
   },
   "compilerOptions": {
