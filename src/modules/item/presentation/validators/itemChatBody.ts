@@ -1,8 +1,10 @@
-import { z } from "zod";
+import { z } from "@hono/zod-openapi";
 
-const itemChatBodySchema = z.object({
-  prompt: z.string(),
-});
+const itemChatBodySchema = z
+  .object({
+    prompt: z.string().openapi({ example: "List all active items" }),
+  })
+  .openapi("ItemChatBody");
 
 type ItemChatBody = z.infer<typeof itemChatBodySchema>;
 

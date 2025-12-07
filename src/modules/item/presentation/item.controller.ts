@@ -1,149 +1,60 @@
 import type { JwtVariables } from "hono/jwt";
 
-import { Hono } from "hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { jwt } from "hono/jwt";
 import { ItemService } from "../application/item.service.ts";
-import { getManyItemsQuerySchema } from "./validators/getManyItemsQuery.ts";
-import { createItemBodySchema } from "./validators/createItemBody.ts";
-import { updateItemBodySchema } from "./validators/updateItemBody.ts";
-import { itemIdParamSchema } from "./validators/itemIdParam.ts";
 import { ItemAiService } from "../infrastructure/item.ai-service.ts";
-import { itemChatBodySchema } from "./validators/itemChatBody.ts";
+import { getManyItemsRoute } from "./routes/get-many-items.route.ts";
+import { getOneItemRoute } from "./routes/get-one-item.route.ts";
+import { createItemRoute } from "./routes/create-item.route.ts";
+import { updateItemRoute } from "./routes/update-item.route.ts";
+import { deleteItemRoute } from "./routes/delete-item.route.ts";
+import { itemChatRoute } from "./routes/item-chat.route.ts";
 
 function defineItemController(service: ItemService, aiService: ItemAiService) {
-  const app = new Hono<{ Variables: JwtVariables }>();
+  const app = new OpenAPIHono<{ Variables: JwtVariables }>();
 
   const jwtSecret = Deno.env.get("JWT_SECRET");
   if (!jwtSecret) throw new Error("JWT_SECRET_ENV_UNDEFINED");
 
   app.use("/*", jwt({ secret: jwtSecret }));
 
-  /**
-   * Get Many Items Route
-   */
-  app
-    .get("/", async (c) => {
-      const query = c.req.query();
-      const validatedQuery = getManyItemsQuerySchema.safeParse(query);
+  app.openapi(getManyItemsRoute, async (c) => {
+    const query = c.req.valid("query");
+    const result = await service.getMany(query);
+    return c.json(result, 200);
+  });
 
-      if (!validatedQuery.success) {
-        return c.json({
-          message: "invalid query",
-          issues: validatedQuery.error.issues,
-        }, 400);
-      }
+  app.openapi(getOneItemRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const result = await service.getOne(id);
+    return c.json(result, 200);
+  });
 
-      const result = await service.getMany(validatedQuery.data);
-      return c.json(result);
-    });
+  app.openapi(createItemRoute, async (c) => {
+    const body = c.req.valid("json");
+    const result = await service.create(body);
+    return c.json(result, 201);
+  });
 
-  /**
-   * Get One Item Route
-   */
-  app
-    .get("/:id", async (c) => {
-      const param = c.req.query();
-      const validatedParam = itemIdParamSchema.safeParse(param);
+  app.openapi(updateItemRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const body = c.req.valid("json");
+    const result = await service.update(id, body);
+    return c.json(result, 200);
+  });
 
-      if (!validatedParam.success) {
-        return c.json({
-          message: "invalid param",
-          issues: validatedParam.error.issues,
-        }, 400);
-      }
+  app.openapi(deleteItemRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    await service.delete(id);
+    return c.body(null, 204);
+  });
 
-      const result = await service.getOne(validatedParam.data.id);
-      return c.json(result);
-    });
-
-  /**
-   * Create Item Route
-   */
-  app
-    .post("/", async (c) => {
-      const body = await c.req.json();
-      const validatedBody = createItemBodySchema.safeParse(body);
-
-      if (!validatedBody.success) {
-        return c.json({
-          message: "invalid body",
-          issues: validatedBody.error.issues,
-        }, 400);
-      }
-
-      const result = await service.create(validatedBody.data);
-      return c.json(result, 201);
-    });
-
-  /**
-   * Update Item Route
-   */
-  app
-    .patch("/:id", async (c) => {
-      const param = c.req.param();
-      const validatedParam = itemIdParamSchema.safeParse(param);
-
-      if (!validatedParam.success) {
-        return c.json({
-          message: "invalid param",
-          issues: validatedParam.error.issues,
-        }, 400);
-      }
-
-      const body = await c.req.json();
-      const validatedBody = updateItemBodySchema.safeParse(body);
-
-      if (!validatedBody.success) {
-        return c.json({
-          message: "invalid body",
-          issues: validatedBody.error.issues,
-        }, 400);
-      }
-
-      const result = await service.update(
-        validatedParam.data.id,
-        validatedBody.data,
-      );
-      return c.json(result);
-    });
-
-  /**
-   * Delete Item Route
-   */
-  app
-    .delete("/:id", async (c) => {
-      const param = c.req.param();
-      const validatedParam = itemIdParamSchema.safeParse(param);
-
-      if (!validatedParam.success) {
-        return c.json({
-          message: "invalid param",
-          issues: validatedParam.error.issues,
-        }, 400);
-      }
-
-      await service.delete(validatedParam.data.id);
-      return c.status(204);
-    });
-
-  /**
-   * Item AI Chat Route
-   */
-  app
-    .post("/chat", async (c) => {
-      const body = await c.req.json();
-      const validatedBody = itemChatBodySchema.safeParse(body);
-
-      if (!validatedBody.success) {
-        return c.json({
-          message: "invalid body",
-          issues: validatedBody.error.issues,
-        }, 400);
-      }
-
-      const response = await aiService.generate(1, validatedBody.data.prompt);
-      return c.json({ response });
-    });
+  app.openapi(itemChatRoute, async (c) => {
+    const body = c.req.valid("json");
+    const response = await aiService.generate(1, body.prompt);
+    return c.json({ response }, 200);
+  });
 
   return app;
 }

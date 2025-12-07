@@ -1,7 +1,6 @@
 {
   "version": "5",
   "specifiers": {
-    "jsr:@hono/hono@^4.10.7": "4.10.7",
     "jsr:@std/crypto@^1.0.5": "1.0.5",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
     "jsr:@std/internal@^1.0.12": "1.0.12",
@@ -10,19 +9,19 @@
     "jsr:@std/regexp@^1.0.1": "1.0.1",
     "jsr:@std/text@^1.0.16": "1.0.16",
     "npm:@google/genai@^1.31.0": "1.31.0",
+    "npm:@hono/swagger-ui@~0.5.1": "0.5.2_hono@4.10.7",
+    "npm:@hono/zod-openapi@^1.1.5": "1.1.5_hono@4.10.7_zod@4.1.13",
     "npm:@types/bcrypt@6": "6.0.0",
     "npm:@types/node@*": "24.2.0",
     "npm:argon2@0.44": "0.44.0",
     "npm:bcrypt@6": "6.0.0",
+    "npm:hono@^4.10.7": "4.10.7",
     "npm:kysely@~0.28.8": "0.28.8",
     "npm:mysql2@*": "3.15.3",
     "npm:redis@^5.10.0": "5.10.0_@redis+client@5.10.0",
     "npm:zod@^4.1.13": "4.1.13"
   },
   "jsr": {
-    "@hono/hono@4.10.7": {
-      "integrity": "b60512559d554f20a945e07a6c5f115e57cbd4c024da9217833c8e7b2c90355d"
-    },
     "@std/crypto@1.0.5": {
       "integrity": "0dcfbb319fe0bba1bd3af904ceb4f948cde1b92979ec1614528380ed308a3b40"
     },
@@ -49,6 +48,13 @@
     }
   },
   "npm": {
+    "@asteasolutions/zod-to-openapi@8.2.0_zod@4.1.13": {
+      "integrity": "sha512-u05zNUirlukJAf9oEHmxSF31L1XQhz9XdpVILt7+xhrz65oQqBpiOWFkGvRWL0IpjOUJ878idKoNmYPxrFnkeg==",
+      "dependencies": [
+        "openapi3-ts",
+        "zod"
+      ]
+    },
     "@epic-web/invariant@1.0.0": {
       "integrity": "sha512-lrTPqgvfFQtR/eY/qkIzp98OGdNJu0m5ji3q/nJI8v3SXkRKEnWiOxMmbvcSoAIzv/cGiuvRy57k4suKQSAdwA=="
     },
@@ -57,6 +63,29 @@
       "dependencies": [
         "google-auth-library",
         "ws"
+      ]
+    },
+    "@hono/swagger-ui@0.5.2_hono@4.10.7": {
+      "integrity": "sha512-7wxLKdb8h7JTdZ+K8DJNE3KXQMIpJejkBTQjrYlUWF28Z1PGOKw6kUykARe5NTfueIN37jbyG/sBYsbzXzG53A==",
+      "dependencies": [
+        "hono"
+      ]
+    },
+    "@hono/zod-openapi@1.1.5_hono@4.10.7_zod@4.1.13": {
+      "integrity": "sha512-EAnY6ad4yt/MUKHx716BEGGOXSl5d0/FOLozOYB/pmSEFq07qrzefKFtBEMAgd3hlpJXjH+4lwgTtlAo+BGBgQ==",
+      "dependencies": [
+        "@asteasolutions/zod-to-openapi",
+        "@hono/zod-validator",
+        "hono",
+        "openapi3-ts",
+        "zod"
+      ]
+    },
+    "@hono/zod-validator@0.7.5_hono@4.10.7_zod@4.1.13": {
+      "integrity": "sha512-n4l4hutkfYU07PzRUHBOVzUEn38VSfrh+UVE5d0w4lyfWDOEhzxIupqo5iakRiJL44c3vTuFJBvcmUl8b9agIA==",
+      "dependencies": [
+        "hono",
+        "zod"
       ]
     },
     "@isaacs/cliui@8.0.2": {
@@ -310,6 +339,9 @@
         "jws"
       ]
     },
+    "hono@4.10.7": {
+      "integrity": "sha512-icXIITfw/07Q88nLSkB9aiUrd8rYzSweK681Kjo/TSggaGbOX4RRyxxm71v+3PC8C/j+4rlxGeoTRxQDkaJkUw=="
+    },
     "https-proxy-agent@7.0.6": {
       "integrity": "sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==",
       "dependencies": [
@@ -428,6 +460,12 @@
       "integrity": "sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==",
       "bin": true
     },
+    "openapi3-ts@4.5.0": {
+      "integrity": "sha512-jaL+HgTq2Gj5jRcfdutgRGLosCy/hT8sQf6VOy+P+g36cZOjI1iukdPnijC+4CmeRzg/jEllJUboEic2FhxhtQ==",
+      "dependencies": [
+        "yaml"
+      ]
+    },
     "package-json-from-dist@1.0.1": {
       "integrity": "sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw=="
     },
@@ -542,21 +580,27 @@
     "ws@8.18.3": {
       "integrity": "sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg=="
     },
+    "yaml@2.8.2": {
+      "integrity": "sha512-mplynKqc1C2hTVYxd0PU2xQAc22TI1vShAYGksCCfxbn/dFwnHTNi1bvYsBTkhdUNtGIf5xNOg938rrSSYvS9A==",
+      "bin": true
+    },
     "zod@4.1.13": {
       "integrity": "sha512-AvvthqfqrAhNH9dnfmrfKzX5upOdjUVJYFqNSlkmGf64gRaTzlPwz99IHYnVs28qYAybvAlBV+H7pn0saFY4Ig=="
     }
   },
   "workspace": {
     "dependencies": [
-      "jsr:@hono/hono@^4.10.7",
       "jsr:@std/crypto@^1.0.5",
       "jsr:@std/encoding@^1.0.10",
       "jsr:@std/path@^1.1.3",
       "jsr:@std/text@^1.0.16",
       "npm:@google/genai@^1.31.0",
+      "npm:@hono/swagger-ui@~0.5.1",
+      "npm:@hono/zod-openapi@^1.1.5",
       "npm:@types/bcrypt@6",
       "npm:argon2@0.44",
       "npm:bcrypt@6",
+      "npm:hono@^4.10.7",
       "npm:kysely@~0.28.8",
       "npm:mysql2@*",
       "npm:redis@^5.10.0",

@@ -1,88 +1,36 @@
-import { Hono } from "hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { AuthService } from "../application/auth.service.ts";
-import { signupBodySchema } from "./validators/signupBody.ts";
-import { signinBodySchema } from "./validators/signinBody.ts";
-import { signoutBodySchema } from "./validators/signoutBody.ts";
-import { refreshBodySchema } from "./validators/refreshBody.ts";
+import { signupRoute } from "./routes/signup.route.ts";
+import { signinRoute } from "./routes/signin.route.ts";
+import { signoutRoute } from "./routes/signout.route.ts";
+import { refreshRoute } from "./routes/refresh.route.ts";
 
 function defineAuthController(service: AuthService) {
-  const app = new Hono();
+  const app = new OpenAPIHono();
 
-  /**
-   * Sign Up Route
-   */
-  app
-    .post("/signup", async (c) => {
-      const body = await c.req.json();
-      const validatedBody = signupBodySchema.safeParse(body);
+  app.openapi(signupRoute, async (c) => {
+    const body = c.req.valid("json");
+    const result = await service.signUp(body);
+    return c.json(result, 201);
+  });
 
-      if (!validatedBody.success) {
-        return c.json({
-          message: "invalid body",
-          issues: validatedBody.error.issues,
-        }, 400);
-      }
+  app.openapi(signinRoute, async (c) => {
+    const body = c.req.valid("json");
+    const result = await service.signIn(body);
+    return c.json(result, 200);
+  });
 
-      const result = await service.signUp(validatedBody.data);
-      return c.json(result, 201);
-    });
+  app.openapi(signoutRoute, async (c) => {
+    const body = c.req.valid("json");
+    await service.signOut(body.refreshToken);
+    return c.body(null, 204);
+  });
 
-  /**
-   * Sign In Route
-   */
-  app
-    .post("/signin", async (c) => {
-      const body = await c.req.json();
-      const validatedBody = signinBodySchema.safeParse(body);
-
-      if (!validatedBody.success) {
-        return c.json({
-          message: "invalid body",
-          issues: validatedBody.error.issues,
-        }, 400);
-      }
-
-      const result = await service.signIn(validatedBody.data);
-      return c.json(result);
-    });
-
-  /**
-   * Sign Out Route
-   */
-  app
-    .post("/signout", async (c) => {
-      const body = await c.req.json();
-      const validatedBody = signoutBodySchema.safeParse(body);
-
-      if (!validatedBody.success) {
-        return c.json({
-          message: "invalid body",
-          issues: validatedBody.error.issues,
-        }, 400);
-      }
-
-      await service.signOut(validatedBody.data.refreshToken);
-      return c.status(204);
-    });
-
-  /**
-   * Refresh Token Route
-   */
-  app
-    .post("/refresh", async (c) => {
-      const body = await c.req.json();
-      const validatedBody = refreshBodySchema.safeParse(body);
-
-      if (!validatedBody.success) {
-        return c.json({
-          message: "invalid body",
-          issues: validatedBody.error.issues,
-        }, 400);
-      }
-
-      const result = await service.refresh(validatedBody.data.refreshToken);
-      return c.json(result);
-    });
+  app.openapi(refreshRoute, async (c) => {
+    const body = c.req.valid("json");
+    const result = await service.refresh(body.refreshToken);
+    return c.json(result, 200);
+  });
 
   return app;
 }

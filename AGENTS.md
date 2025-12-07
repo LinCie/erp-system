@@ -1,28 +1,35 @@
 # AGENTS.md
 
-This document provides comprehensive guidance for AI agents working with this codebase.
+This document provides comprehensive guidance for AI agents working with this
+codebase.
 
 ## Critical: Documentation Lookup via Context7
 
-**MANDATORY**: Before generating any code or answering code-related questions, you MUST use Context7 MCP to fetch up-to-date documentation. Do NOT rely on prior knowledge for libraries and frameworks.
+**MANDATORY**: Before generating any code or answering code-related questions,
+you MUST use Context7 MCP to fetch up-to-date documentation. Do NOT rely on
+prior knowledge for libraries and frameworks.
 
 ### Required Workflow
 
-1. **Always call `mcp_Context7_resolve_library_id`** first to get the correct library ID
-2. **Then call `mcp_Context7_get_library_docs`** with the resolved ID to fetch current documentation
-3. Only after retrieving documentation should you generate code or provide answers
+1. **Always call `mcp_Context7_resolve_library_id`** first to get the correct
+   library ID
+2. **Then call `mcp_Context7_get_library_docs`** with the resolved ID to fetch
+   current documentation
+3. Only after retrieving documentation should you generate code or provide
+   answers
 
 ### Libraries to Look Up
 
-| Library | Search Term |
-|---------|-------------|
-| Hono | `hono` |
-| Kysely | `kysely` |
-| Zod | `zod` |
-| Deno | `deno` |
-| Redis | `redis node` |
-| Google Gemini | `google genai` |
-| bcrypt | `bcrypt` |
+| Library          | Search Term        |
+| ---------------- | ------------------ |
+| Hono             | `hono`             |
+| Hono Zod OpenAPI | `hono zod openapi` |
+| Kysely           | `kysely`           |
+| Zod              | `zod`              |
+| Deno             | `deno`             |
+| Redis            | `redis node`       |
+| Google Gemini    | `google genai`     |
+| bcrypt           | `bcrypt`           |
 
 ### Example Usage
 
@@ -30,6 +37,10 @@ This document provides comprehensive guidance for AI agents working with this co
 // Before writing Hono route handlers:
 1. resolve_library_id("hono")
 2. get_library_docs(resolved_id, topic="routing")
+
+// Before writing OpenAPI routes:
+1. resolve_library_id("hono zod openapi")
+2. get_library_docs(resolved_id, topic="createRoute")
 
 // Before writing Kysely queries:
 1. resolve_library_id("kysely")
@@ -43,6 +54,7 @@ This document provides comprehensive guidance for AI agents working with this co
 ### When to Call Context7
 
 - Writing new route handlers → Look up Hono docs
+- Creating OpenAPI routes → Look up Hono Zod OpenAPI docs
 - Writing database queries → Look up Kysely docs
 - Creating validation schemas → Look up Zod docs
 - Implementing JWT auth → Look up Hono JWT middleware docs
@@ -50,11 +62,13 @@ This document provides comprehensive guidance for AI agents working with this co
 - Implementing AI features → Look up Google GenAI docs
 - Any code generation or modification task
 
-**Never assume API signatures or patterns from memory. Always verify with Context7 first.**
+**Never assume API signatures or patterns from memory. Always verify with
+Context7 first.**
 
 ## Critical: Code Quality Checks
 
-**MANDATORY**: After generating or modifying any code, you MUST perform the following checks:
+**MANDATORY**: After generating or modifying any code, you MUST perform the
+following checks:
 
 ### Required Post-Code Workflow
 
@@ -73,6 +87,7 @@ deno fmt <file>        # Format specific file
 ### Workflow Example
 
 After writing/modifying code:
+
 ```
 1. getDiagnostics(["path/to/modified/file.ts"])
 2. If errors found → fix them
@@ -92,20 +107,24 @@ After writing/modifying code:
 
 ## Project Overview
 
-A Deno-based REST API backend using Clean Architecture principles. Built with Hono web framework, Kysely query builder, MySQL database, and Redis for caching/session management. Includes Google Gemini AI integration for intelligent features.
+A Deno-based REST API backend using Clean Architecture principles. Built with
+Hono web framework, Kysely query builder, MySQL database, and Redis for
+caching/session management. Includes Google Gemini AI integration for
+intelligent features. Uses OpenAPI/Swagger for API documentation.
 
 ### Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Runtime | Deno 2.x |
-| Web Framework | Hono |
-| Database | MySQL via Kysely |
-| Caching | Redis |
-| Validation | Zod |
-| Authentication | JWT (access + refresh tokens) |
-| Password Hashing | bcrypt |
-| AI | Google Gemini |
+| Layer             | Technology                                     |
+| ----------------- | ---------------------------------------------- |
+| Runtime           | Deno 2.x                                       |
+| Web Framework     | Hono                                           |
+| API Documentation | OpenAPI 3.1 via @hono/zod-openapi + Swagger UI |
+| Database          | MySQL via Kysely                               |
+| Caching           | Redis                                          |
+| Validation        | Zod                                            |
+| Authentication    | JWT (access + refresh tokens)                  |
+| Password Hashing  | bcrypt                                         |
+| AI                | Google Gemini                                  |
 
 ### Key Commands
 
@@ -114,6 +133,11 @@ deno task dev              # Development with hot reload
 deno task start            # Production start
 deno task create:module <name>  # Scaffold new module
 ```
+
+### API Documentation
+
+- **Swagger UI**: `/swagger` - Interactive API documentation
+- **OpenAPI JSON**: `/doc` - Raw OpenAPI 3.1 specification
 
 ## Architecture
 
@@ -124,7 +148,7 @@ src/modules/<module>/
 ├── domain/           # Entities, business rules (innermost)
 ├── application/      # Use cases, interfaces, services
 ├── infrastructure/   # External implementations (DB, cache, AI)
-└── presentation/     # Controllers, validators, HTTP layer (outermost)
+└── presentation/     # Controllers, routes, validators, schemas (outermost)
 ```
 
 ### Dependency Flow
@@ -156,11 +180,43 @@ src/
 ### Creating a New Module
 
 Use the scaffolding script:
+
 ```bash
 deno task create:module <module-name>
 ```
 
-This generates all required files following established patterns.
+This generates all required files following established patterns including
+OpenAPI routes, schemas, and validators.
+
+### Generated Module Structure
+
+```
+src/modules/<name>/
+├── domain/
+│   └── <name>.entity.ts
+├── application/
+│   ├── <name>-repository.interface.ts
+│   └── <name>.service.ts
+├── infrastructure/
+│   └── <name>.repository.ts
+└── presentation/
+    ├── <name>.controller.ts
+    ├── <name>.module.ts
+    ├── routes/
+    │   ├── get-many-<name>s.route.ts
+    │   ├── get-one-<name>.route.ts
+    │   ├── create-<name>.route.ts
+    │   ├── update-<name>.route.ts
+    │   └── delete-<name>.route.ts
+    ├── schemas/
+    │   ├── <name>-response.schema.ts
+    │   └── error-response.schema.ts
+    └── validators/
+        ├── <name>IdParam.ts
+        ├── create<Name>Body.ts
+        ├── update<Name>Body.ts
+        └── getMany<Name>sQuery.ts
+```
 
 ### Layer Responsibilities
 
@@ -181,6 +237,7 @@ export type { ExampleEntity };
 ```
 
 `BaseEntity` provides:
+
 - `id: number`
 - `status: string`
 - `created_at?: Date`
@@ -190,6 +247,7 @@ export type { ExampleEntity };
 #### 2. Application Layer (`application/`)
 
 **Repository Interface** - defines data access contract:
+
 ```typescript
 // application/<name>-repository.interface.ts
 interface IExampleRepository {
@@ -202,6 +260,7 @@ interface IExampleRepository {
 ```
 
 **Service** - orchestrates business logic via dependency injection:
+
 ```typescript
 // application/<name>.service.ts
 class ExampleService {
@@ -213,6 +272,7 @@ class ExampleService {
 #### 3. Infrastructure Layer (`infrastructure/`)
 
 **Repository Implementation** - implements interface using Kysely:
+
 ```typescript
 // infrastructure/<name>.repository.ts
 class ExampleRepository implements IExampleRepository {
@@ -222,33 +282,78 @@ class ExampleRepository implements IExampleRepository {
 ```
 
 **Key Patterns:**
+
 - Soft delete: Set `status: "archived"`, `deleted_at: new Date()`
 - Always update `updated_at` on modifications
 - Use `safeBigintToNumber()` for insert IDs
 
 #### 4. Presentation Layer (`presentation/`)
 
-**Controller** - HTTP handlers with validation:
+**Routes** - OpenAPI route definitions in `routes/` folder:
+
+```typescript
+// presentation/routes/create-example.route.ts
+import { createRoute } from "@hono/zod-openapi";
+import { createExampleBodySchema } from "../validators/createExampleBody.ts";
+import { exampleResponseSchema } from "../schemas/example-response.schema.ts";
+import { errorResponseSchema } from "../schemas/error-response.schema.ts";
+
+const createExampleRoute = createRoute({
+  method: "post",
+  path: "/",
+  tags: ["Examples"],
+  summary: "Create a new example",
+  security: [{ Bearer: [] }],
+  request: {
+    body: {
+      content: {
+        "application/json": { schema: createExampleBodySchema },
+      },
+    },
+  },
+  responses: {
+    201: {
+      content: { "application/json": { schema: exampleResponseSchema } },
+      description: "Example created successfully",
+    },
+    400: {
+      content: { "application/json": { schema: errorResponseSchema } },
+      description: "Validation error",
+    },
+  },
+});
+
+export { createExampleRoute };
+```
+
+**Controller** - HTTP handlers using OpenAPIHono:
+
 ```typescript
 // presentation/<name>.controller.ts
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { jwt } from "hono/jwt";
+import { createExampleRoute } from "./routes/create-example.route.ts";
+
 function defineExampleController(service: ExampleService) {
-  const app = new Hono();
-  
-  app.get("/", async (c) => {
-    const query = c.req.query();
-    const validated = schema.safeParse(query);
-    if (!validated.success) {
-      return c.json({ message: "invalid query", issues: validated.error.issues }, 400);
-    }
-    const result = await service.getMany(validated.data);
-    return c.json(result);
+  const app = new OpenAPIHono<{ Variables: JwtVariables }>();
+
+  const jwtSecret = Deno.env.get("JWT_SECRET");
+  if (!jwtSecret) throw new Error("JWT_SECRET_ENV_UNDEFINED");
+
+  app.use("/*", jwt({ secret: jwtSecret }));
+
+  app.openapi(createExampleRoute, async (c) => {
+    const body = c.req.valid("json");
+    const result = await service.create(body);
+    return c.json(result, 201);
   });
-  
+
   return app;
 }
 ```
 
 **Module** - dependency injection composition:
+
 ```typescript
 // presentation/<name>.module.ts
 const db = getDatabase();
@@ -259,48 +364,123 @@ const controller = defineExampleController(service);
 export { controller };
 ```
 
-**Validators** - Zod schemas in `validators/` folder:
+**Validators** - Zod schemas with OpenAPI metadata in `validators/` folder:
+
 ```typescript
 // presentation/validators/createExampleBody.ts
-import { z } from "zod";
+import { z } from "@hono/zod-openapi";
 
-const createExampleBodySchema = z.object({
-  name: z.string(),
-  status: z.enum(["active", "inactive"]),
-});
+const createExampleBodySchema = z
+  .object({
+    name: z.string().openapi({ example: "My Example" }),
+    status: z.enum(["active", "inactive"]).openapi({ example: "active" }),
+  })
+  .openapi("CreateExampleBody");
 
 export { createExampleBodySchema };
 ```
 
-## Validation Patterns
-
-### Request Validation
-
-Always validate before processing:
+**Schemas** - Response schemas with OpenAPI metadata in `schemas/` folder:
 
 ```typescript
-const body = await c.req.json();
-const validated = schema.safeParse(body);
+// presentation/schemas/example-response.schema.ts
+import { z } from "@hono/zod-openapi";
 
-if (!validated.success) {
-  return c.json({
-    message: "invalid body",  // or "invalid query", "invalid param"
-    issues: validated.error.issues,
-  }, 400);
-}
+const exampleResponseSchema = z
+  .object({
+    id: z.number().openapi({ example: 1 }),
+    name: z.string().openapi({ example: "My Example" }),
+    status: z.string().openapi({ example: "active" }),
+  })
+  .openapi("ExampleResponse");
+
+export { exampleResponseSchema };
 ```
+
+## OpenAPI Patterns
+
+### Route Definition
+
+Use `createRoute` from `@hono/zod-openapi`:
+
+```typescript
+const route = createRoute({
+  method: "get",
+  path: "/{id}",
+  tags: ["TagName"],
+  summary: "Description",
+  security: [{ Bearer: [] }], // For protected routes
+  request: {
+    params: paramSchema,
+    query: querySchema,
+    body: { content: { "application/json": { schema: bodySchema } } },
+  },
+  responses: {
+    200: {
+      content: { "application/json": { schema: responseSchema } },
+      description: "Success description",
+    },
+  },
+});
+```
+
+### Schema with OpenAPI Metadata
+
+Always add `.openapi()` to schemas:
+
+```typescript
+const schema = z
+  .object({
+    field: z.string().openapi({ example: "value" }),
+  })
+  .openapi("SchemaName");
+```
+
+### Path Parameters
+
+Use `param` option for path parameters:
+
+```typescript
+const idParamSchema = z
+  .object({
+    id: z.coerce.number().openapi({
+      param: { name: "id", in: "path" },
+      example: 1,
+    }),
+  })
+  .openapi("IdParam");
+```
+
+### Controller Handler
+
+Use `app.openapi()` and `c.req.valid()`:
+
+```typescript
+app.openapi(route, async (c) => {
+  const body = c.req.valid("json");
+  const params = c.req.valid("param");
+  const query = c.req.valid("query");
+  // ...
+});
+```
+
+## Validation Patterns
 
 ### Common Validator Patterns
 
-| Type | File Pattern | Example |
-|------|--------------|---------|
-| Request body | `<action><Entity>Body.ts` | `createItemBody.ts` |
-| Query params | `<action><Entity>Query.ts` | `getManyItemsQuery.ts` |
-| URL params | `<entity>IdParam.ts` | `itemIdParam.ts` |
+| Type         | File Pattern                  | Location      |
+| ------------ | ----------------------------- | ------------- |
+| Request body | `create<Entity>Body.ts`       | `validators/` |
+| Update body  | `update<Entity>Body.ts`       | `validators/` |
+| Query params | `getMany<Entity>sQuery.ts`    | `validators/` |
+| URL params   | `<entity>IdParam.ts`          | `validators/` |
+| Response     | `<entity>-response.schema.ts` | `schemas/`    |
+| Error        | `error-response.schema.ts`    | `schemas/`    |
 
 ### Coercion for Query/Params
 
 Use `z.coerce` for URL parameters:
+
 ```typescript
 const schema = z.object({
   id: z.coerce.number(),
@@ -326,12 +506,12 @@ app.use("/*", jwt({ secret: jwtSecret }));
 
 ### Auth Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/auth/signup` | POST | Register new user |
-| `/auth/signin` | POST | Login, returns tokens |
-| `/auth/signout` | POST | Invalidate refresh token |
-| `/auth/refresh` | POST | Get new token pair |
+| Endpoint        | Method | Description              |
+| --------------- | ------ | ------------------------ |
+| `/auth/signup`  | POST   | Register new user        |
+| `/auth/signin`  | POST   | Login, returns tokens    |
+| `/auth/signout` | POST   | Invalidate refresh token |
+| `/auth/refresh` | POST   | Get new token pair       |
 
 ## Database Patterns
 
@@ -368,7 +548,8 @@ await this.db
 
 ### Database Types
 
-Types are generated in `src/shared/infrastructure/persistence/database.d.ts` via `kysely-codegen`.
+Types are generated in `src/shared/infrastructure/persistence/database.d.ts` via
+`kysely-codegen`.
 
 ### Status Values
 
@@ -381,7 +562,10 @@ type StatusType = "active" | "inactive" | "archived";
 ### Database Access
 
 ```typescript
-import { getDatabase, PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
+import {
+  getDatabase,
+  PersistenceType,
+} from "@/shared/infrastructure/persistence/index.ts";
 const db = getDatabase();
 ```
 
@@ -404,6 +588,7 @@ const gemini = getGemini();
 ### Path Aliases
 
 Use `@/` for src-relative imports:
+
 ```typescript
 import { BaseEntity } from "@/shared/domain/base.entity.ts";
 import { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
@@ -412,25 +597,36 @@ import { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
 ### File Extensions
 
 Always include `.ts` extension in imports:
+
 ```typescript
 import { UserEntity } from "../domain/user.entity.ts";
 ```
 
+### OpenAPI Imports
+
+Use `@hono/zod-openapi` for Zod in presentation layer:
+
+```typescript
+import { z } from "@hono/zod-openapi";
+import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
+```
+
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `PORT` | Server port (default: 8000) |
-| `DATABASE_URL` | MySQL connection string |
-| `JWT_SECRET` | JWT signing secret |
-| `REDIS_URL` | Redis connection URL |
-| `GEMINI_API_KEY` | Google Gemini API key |
+| Variable         | Description                 |
+| ---------------- | --------------------------- |
+| `PORT`           | Server port (default: 8000) |
+| `DATABASE_URL`   | MySQL connection string     |
+| `JWT_SECRET`     | JWT signing secret          |
+| `REDIS_URL`      | Redis connection URL        |
+| `GEMINI_API_KEY` | Google Gemini API key       |
 
 ## Error Handling
 
 ### Service Layer Errors
 
 Throw descriptive errors:
+
 ```typescript
 if (!user) throw new Error("USER_NOT_FOUND");
 if (!isValid) throw new Error("PASSWORD_INCORRECT");
@@ -470,6 +666,8 @@ class ExampleAiService {
    - Interfaces: `I` prefix for repository interfaces
    - Services: `PascalCase` + `Service` suffix
    - Controllers: `define<Name>Controller` function
+   - Routes: `<action><Name>Route` (e.g., `createItemRoute`)
+   - Schemas: `<name>ResponseSchema`, `errorResponseSchema`
 
 2. **Export Style**
    - Use named exports
@@ -486,12 +684,14 @@ class ExampleAiService {
 ## Docker
 
 ### Development
+
 ```bash
 docker compose -f docker-compose.dev.yml up  # Redis only
 deno task dev
 ```
 
 ### Production
+
 ```bash
 docker compose up --build
 ```
@@ -503,6 +703,8 @@ docker compose up --build
 - [ ] Implement service in `application/`
 - [ ] Implement repository in `infrastructure/`
 - [ ] Create validators in `presentation/validators/`
+- [ ] Create response schemas in `presentation/schemas/`
+- [ ] Define routes in `presentation/routes/`
 - [ ] Define controller in `presentation/`
 - [ ] Wire up module in `presentation/<name>.module.ts`
 - [ ] Register route in `src/main.ts`
