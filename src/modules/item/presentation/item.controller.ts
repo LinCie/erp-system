@@ -1,4 +1,7 @@
+import type { JwtVariables } from "hono/jwt";
+
 import { Hono } from "hono";
+import { jwt } from "hono/jwt";
 import { ItemService } from "../application/item.service.ts";
 import { getManyItemsQuerySchema } from "./validators/getManyItemsQuery.ts";
 import { createItemBodySchema } from "./validators/createItemBody.ts";
@@ -8,7 +11,12 @@ import { ItemAiService } from "../infrastructure/item.ai-service.ts";
 import { itemChatBodySchema } from "./validators/itemChatBody.ts";
 
 function defineItemController(service: ItemService, aiService: ItemAiService) {
-  const app = new Hono();
+  const app = new Hono<{ Variables: JwtVariables }>();
+
+  const jwtSecret = Deno.env.get("JWT_SECRET");
+  if (!jwtSecret) throw new Error("JWT_SECRET_ENV_UNDEFINED");
+
+  app.use("/*", jwt({ secret: jwtSecret }));
 
   /**
    * Get Many Items Route
