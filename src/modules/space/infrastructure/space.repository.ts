@@ -62,7 +62,12 @@ class SpaceRepository implements ISpaceRepository {
   async create(data: Omit<Space, "id">) {
     const created = await this.db
       .insertInto("spaces")
-      .values({ ...data, created_at: new Date(), updated_at: new Date() })
+      .values({
+        ...data,
+        address: JSON.stringify(data.address),
+        created_at: new Date(),
+        updated_at: new Date(),
+      })
       .executeTakeFirst();
 
     if (!created.insertId) {
@@ -75,7 +80,11 @@ class SpaceRepository implements ISpaceRepository {
   async update(id: number, data: Partial<Space>) {
     await this.db
       .updateTable("spaces")
-      .set({ ...data, updated_at: new Date() })
+      .set({
+        ...data,
+        address: JSON.stringify(data.address),
+        updated_at: new Date(),
+      })
       .where("id", "=", id)
       .executeTakeFirst();
 
