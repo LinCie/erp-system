@@ -149,4 +149,3 @@ class AuthRepository implements IAuthRepository {
 }
 
 export { AuthRepository };
-
