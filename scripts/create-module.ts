@@ -4,19 +4,29 @@ import { toCamelCase, toPascalCase } from "@std/text";
 const SCRIPT_DIR = dirname(fromFileUrl(import.meta.url));
 const BASE_PATH = join(SCRIPT_DIR, "..", "src", "modules");
 
-function getModuleName(): string {
-  const name = Deno.args[0];
-  if (!name) {
-    console.error("Usage: deno task create:module <module-name>");
-    console.error("Example: deno task create:module user");
-    Deno.exit(1);
-  }
-  return name.toLowerCase();
+interface ModuleConfig {
+  name: string;
+  plural: string;
 }
 
-async function createModule(name: string) {
+function getModuleConfig(): ModuleConfig {
+  const name = Deno.args[0];
+  if (!name) {
+    console.error("Usage: deno task create:module <module-name> [plural-form]");
+    console.error("Example: deno task create:module user");
+    console.error("Example: deno task create:module company companies");
+    Deno.exit(1);
+  }
+  const plural = Deno.args[1] || `${name}s`;
+  return { name: name.toLowerCase(), plural: plural.toLowerCase() };
+}
+
+async function createModule(config: ModuleConfig) {
+  const { name, plural } = config;
   const pascal = toPascalCase(name);
   const camel = toCamelCase(name);
+  const pascalPlural = toPascalCase(plural);
+  const camelPlural = toCamelCase(plural);
   const modulePath = `${BASE_PATH}/${name}`;
 
   // Check if module exists
@@ -59,17 +69,17 @@ export type { ${pascal}Entity };
     `import { GetManyPropsType } from "@/shared/application/types/get-all.type.ts";
 import { ${pascal}Entity as ${pascal} } from "../domain/${name}.entity.ts";
 
-type GetMany${pascal}sProps = GetManyPropsType;
+type GetMany${pascalPlural}Props = GetManyPropsType;
 
 interface I${pascal}Repository {
-  getMany(props: GetMany${pascal}sProps): Promise<${pascal}[]>;
+  getMany(props: GetMany${pascalPlural}Props): Promise<${pascal}[]>;
   getOne(id: number): Promise<${pascal}>;
   create(data: Omit<${pascal}, "id">): Promise<${pascal}>;
   update(id: number, data: Partial<${pascal}>): Promise<${pascal}>;
   delete(id: number): Promise<void>;
 }
 
-export type { GetMany${pascal}sProps, I${pascal}Repository };
+export type { GetMany${pascalPlural}Props, I${pascal}Repository };
 `,
   );
 
@@ -77,7 +87,7 @@ export type { GetMany${pascal}sProps, I${pascal}Repository };
   await Deno.writeTextFile(
     `${modulePath}/application/${name}.service.ts`,
     `import {
-  GetMany${pascal}sProps,
+  GetMany${pascalPlural}Props,
   I${pascal}Repository,
 } from "./${name}-repository.interface.ts";
 import { ${pascal}Entity as ${pascal} } from "../domain/${name}.entity.ts";
@@ -85,7 +95,7 @@ import { ${pascal}Entity as ${pascal} } from "../domain/${name}.entity.ts";
 class ${pascal}Service {
   constructor(private readonly ${camel}Repository: I${pascal}Repository) {}
 
-  async getMany(props: GetMany${pascal}sProps) {
+  async getMany(props: GetMany${pascalPlural}Props) {
     return await this.${camel}Repository.getMany(props);
   }
 
@@ -115,7 +125,7 @@ export { ${pascal}Service };
     `${modulePath}/infrastructure/${name}.repository.ts`,
     `import { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
 import {
-  GetMany${pascal}sProps,
+  GetMany${pascalPlural}Props,
   I${pascal}Repository,
 } from "../application/${name}-repository.interface.ts";
 import { ${pascal}Entity as ${pascal} } from "../domain/${name}.entity.ts";
@@ -123,11 +133,11 @@ import { ${pascal}Entity as ${pascal} } from "../domain/${name}.entity.ts";
 class ${pascal}Repository implements I${pascal}Repository {
   constructor(private readonly db: PersistenceType) {}
 
-  async getMany(props: GetMany${pascal}sProps) {
+  async getMany(props: GetMany${pascalPlural}Props) {
     const { page = 1, limit = 10, status = "active" } = props;
 
     const result = await this.db
-      .selectFrom("${name}s")
+      .selectFrom("${plural}")
       .where("status", "=", status)
       .selectAll()
       .limit(limit)
@@ -139,7 +149,7 @@ class ${pascal}Repository implements I${pascal}Repository {
 
   async getOne(id: number) {
     const result = await this.db
-      .selectFrom("${name}s")
+      .selectFrom("${plural}")
       .where("id", "=", id)
       .selectAll()
       .executeTakeFirst();
@@ -153,7 +163,7 @@ class ${pascal}Repository implements I${pascal}Repository {
 
   async create(data: Omit<${pascal}, "id">) {
     const created = await this.db
-      .insertInto("${name}s")
+      .insertInto("${plural}")
       .values({ ...data, created_at: new Date(), updated_at: new Date() })
       .executeTakeFirst();
 
@@ -166,7 +176,7 @@ class ${pascal}Repository implements I${pascal}Repository {
 
   async update(id: number, data: Partial<${pascal}>) {
     await this.db
-      .updateTable("${name}s")
+      .updateTable("${plural}")
       .set({ ...data, updated_at: new Date() })
       .where("id", "=", id)
       .executeTakeFirst();
@@ -176,7 +186,7 @@ class ${pascal}Repository implements I${pascal}Repository {
 
   async delete(id: number) {
     await this.db
-      .updateTable("${name}s")
+      .updateTable("${plural}")
       .where("id", "=", id)
       .set({ status: "archived", updated_at: new Date(), deleted_at: new Date() })
       .executeTakeFirst();
@@ -238,21 +248,21 @@ export type { Update${pascal}Body };
   );
 
   await Deno.writeTextFile(
-    `${modulePath}/presentation/validators/getMany${pascal}sQuery.ts`,
+    `${modulePath}/presentation/validators/getMany${pascalPlural}Query.ts`,
     `import { z } from "@hono/zod-openapi";
 
-const getMany${pascal}sQuerySchema = z
+const getMany${pascalPlural}QuerySchema = z
   .object({
     status: z.enum(["active", "inactive", "archived"]).optional().openapi({ example: "active" }),
     limit: z.coerce.number().positive().optional().openapi({ example: 10 }),
     page: z.coerce.number().positive().optional().openapi({ example: 1 }),
   })
-  .openapi("GetMany${pascal}sQuery");
+  .openapi("GetMany${pascalPlural}Query");
 
-type GetMany${pascal}sQuery = z.infer<typeof getMany${pascal}sQuerySchema>;
+type GetMany${pascalPlural}Query = z.infer<typeof getMany${pascalPlural}QuerySchema>;
 
-export { getMany${pascal}sQuerySchema };
-export type { GetMany${pascal}sQuery };
+export { getMany${pascalPlural}QuerySchema };
+export type { GetMany${pascalPlural}Query };
 `,
   );
 
@@ -271,9 +281,9 @@ const ${camel}ResponseSchema = z
   })
   .openapi("${pascal}Response");
 
-const ${camel}ListResponseSchema = z.array(${camel}ResponseSchema).openapi("${pascal}ListResponse");
+const ${camelPlural}ResponseSchema = z.array(${camel}ResponseSchema).openapi("${pascalPlural}Response");
 
-export { ${camel}ResponseSchema, ${camel}ListResponseSchema };
+export { ${camel}ResponseSchema, ${camelPlural}ResponseSchema };
 `,
   );
 
@@ -302,25 +312,25 @@ export { errorResponseSchema };
 
   // Routes
   await Deno.writeTextFile(
-    `${modulePath}/presentation/routes/get-many-${name}s.route.ts`,
+    `${modulePath}/presentation/routes/get-many-${plural}.route.ts`,
     `import { createRoute } from "@hono/zod-openapi";
-import { getMany${pascal}sQuerySchema } from "../validators/getMany${pascal}sQuery.ts";
-import { ${camel}ListResponseSchema } from "../schemas/${name}-response.schema.ts";
+import { getMany${pascalPlural}QuerySchema } from "../validators/getMany${pascalPlural}Query.ts";
+import { ${camelPlural}ResponseSchema } from "../schemas/${name}-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 
-const getMany${pascal}sRoute = createRoute({
+const getMany${pascalPlural}Route = createRoute({
   method: "get",
   path: "/",
-  tags: ["${pascal}s"],
-  summary: "Get many ${name}s",
+  tags: ["${pascalPlural}"],
+  summary: "Get many ${plural}",
   security: [{ Bearer: [] }],
   request: {
-    query: getMany${pascal}sQuerySchema,
+    query: getMany${pascalPlural}QuerySchema,
   },
   responses: {
     200: {
-      content: { "application/json": { schema: ${camel}ListResponseSchema } },
-      description: "List of ${name}s",
+      content: { "application/json": { schema: ${camelPlural}ResponseSchema } },
+      description: "List of ${plural}",
     },
     400: {
       content: { "application/json": { schema: errorResponseSchema } },
@@ -329,7 +339,7 @@ const getMany${pascal}sRoute = createRoute({
   },
 });
 
-export { getMany${pascal}sRoute };
+export { getMany${pascalPlural}Route };
 `,
   );
 
@@ -343,7 +353,7 @@ import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 const getOne${pascal}Route = createRoute({
   method: "get",
   path: "/{id}",
-  tags: ["${pascal}s"],
+  tags: ["${pascalPlural}"],
   summary: "Get ${name} by ID",
   security: [{ Bearer: [] }],
   request: {
@@ -375,7 +385,7 @@ import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 const create${pascal}Route = createRoute({
   method: "post",
   path: "/",
-  tags: ["${pascal}s"],
+  tags: ["${pascalPlural}"],
   summary: "Create a new ${name}",
   security: [{ Bearer: [] }],
   request: {
@@ -412,7 +422,7 @@ import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 const update${pascal}Route = createRoute({
   method: "patch",
   path: "/{id}",
-  tags: ["${pascal}s"],
+  tags: ["${pascalPlural}"],
   summary: "Update a ${name}",
   security: [{ Bearer: [] }],
   request: {
@@ -448,7 +458,7 @@ import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 const delete${pascal}Route = createRoute({
   method: "delete",
   path: "/{id}",
-  tags: ["${pascal}s"],
+  tags: ["${pascalPlural}"],
   summary: "Delete a ${name}",
   security: [{ Bearer: [] }],
   request: {
@@ -477,7 +487,7 @@ export { delete${pascal}Route };
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { jwt } from "hono/jwt";
 import { ${pascal}Service } from "../application/${name}.service.ts";
-import { getMany${pascal}sRoute } from "./routes/get-many-${name}s.route.ts";
+import { getMany${pascalPlural}Route } from "./routes/get-many-${plural}.route.ts";
 import { getOne${pascal}Route } from "./routes/get-one-${name}.route.ts";
 import { create${pascal}Route } from "./routes/create-${name}.route.ts";
 import { update${pascal}Route } from "./routes/update-${name}.route.ts";
@@ -491,7 +501,7 @@ function define${pascal}Controller(service: ${pascal}Service) {
 
   app.use("/*", jwt({ secret: jwtSecret }));
 
-  app.openapi(getMany${pascal}sRoute, async (c) => {
+  app.openapi(getMany${pascalPlural}Route, async (c) => {
     const query = c.req.valid("query");
     const result = await service.getMany(query);
     return c.json(result, 200);
@@ -559,10 +569,10 @@ Files created:
   - presentation/validators/${name}IdParam.ts
   - presentation/validators/create${pascal}Body.ts
   - presentation/validators/update${pascal}Body.ts
-  - presentation/validators/getMany${pascal}sQuery.ts
+  - presentation/validators/getMany${pascalPlural}Query.ts
   - presentation/schemas/${name}-response.schema.ts
   - presentation/schemas/error-response.schema.ts
-  - presentation/routes/get-many-${name}s.route.ts
+  - presentation/routes/get-many-${plural}.route.ts
   - presentation/routes/get-one-${name}.route.ts
   - presentation/routes/create-${name}.route.ts
   - presentation/routes/update-${name}.route.ts
@@ -571,8 +581,8 @@ Files created:
 Don't forget to:
   1. Add the table to your database schema
   2. Register the controller in main.ts:
-     app.route("/${name}s", ${camel}Controller);`);
+     app.route("/${plural}", ${camel}Controller);`);
 }
 
-const moduleName = getModuleName();
-await createModule(moduleName);
+const moduleConfig = getModuleConfig();
+await createModule(moduleConfig);
