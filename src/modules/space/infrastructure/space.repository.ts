@@ -9,7 +9,13 @@ class SpaceRepository implements ISpaceRepository {
   constructor(private readonly db: PersistenceType) {}
 
   async getMany(props: GetManySpacesProps) {
-    const { page = 1, limit = 10, status = "active", userId } = props;
+    const {
+      page = 1,
+      limit = 10,
+      status = "active",
+      search = "",
+      userId,
+    } = props;
 
     const user = await this.db
       .selectFrom("users")
@@ -18,10 +24,34 @@ class SpaceRepository implements ISpaceRepository {
       .executeTakeFirst();
 
     if (!user?.player_id) {
-      return [];
+      return {
+        data: [],
+        metadata: {
+          totalItems: 0,
+          totalPages: 1,
+          currentPage: page,
+          itemsPerPage: limit,
+        },
+      };
     }
 
-    const result = await this.db
+    const { total } = await this.db
+      .selectFrom("spaces")
+      .innerJoin("relations", (join) =>
+        join
+          .onRef("relations.model1_id", "=", "spaces.id")
+          .on("relations.model1_type", "=", "SPACE")
+          .on("relations.model2_type", "=", "PLAY")
+          .on("relations.model2_id", "=", user.player_id))
+      .where("spaces.status", "=", status)
+      .where("spaces.deleted_at", "is", null)
+      .select((eb) => eb.fn.count("spaces.id").as("total"))
+      .executeTakeFirstOrThrow();
+
+    const totalItems = parseInt(total.toString());
+    const totalPages = Math.ceil(totalItems / limit);
+
+    let query = this.db
       .selectFrom("spaces")
       .innerJoin("relations", (join) =>
         join
@@ -39,10 +69,27 @@ class SpaceRepository implements ISpaceRepository {
         "spaces.notes",
       ])
       .limit(limit)
-      .offset((page - 1) * limit)
-      .execute();
+      .offset((page - 1) * limit);
 
-    return result as Space[];
+    if (search) {
+      query = query.where((eb) =>
+        eb.or([
+          eb("name", "like", `%${search}%`),
+        ])
+      );
+    }
+
+    const result = await query.execute();
+
+    return {
+      data: result as Space[],
+      metadata: {
+        totalItems,
+        totalPages,
+        currentPage: page,
+        itemsPerPage: limit,
+      },
+    };
   }
 
   async getOne(id: number) {

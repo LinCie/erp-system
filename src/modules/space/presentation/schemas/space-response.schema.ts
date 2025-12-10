@@ -1,4 +1,5 @@
 import { z } from "@hono/zod-openapi";
+import { getManyMetadataSchema } from "@/shared/presentation/schemas/get-many-metadata.schema.ts";
 
 const spaceResponseSchema = z
   .object({
@@ -14,8 +15,12 @@ const spaceResponseSchema = z
   })
   .openapi("SpaceResponse");
 
-const spaceListResponseSchema = z.array(spaceResponseSchema).openapi(
-  "SpaceListResponse",
-);
+const spaceListResponseSchema = z.object({
+  data: z.array(spaceResponseSchema),
+  metadata: getManyMetadataSchema,
+})
+  .openapi(
+    "SpaceListResponse",
+  );
 
 export { spaceListResponseSchema, spaceResponseSchema };
