@@ -1,3 +1,4 @@
+import { logger } from "hono/logger";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
 import { itemController } from "./modules/item/presentation/item.module.ts";
@@ -6,6 +7,8 @@ import { spaceController } from "./modules/space/presentation/space.module.ts";
 
 async function main() {
   const app = new OpenAPIHono();
+
+  app.use(logger());
 
   const { authController } = await createAuthModule();
 
