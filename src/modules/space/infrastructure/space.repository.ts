@@ -74,7 +74,11 @@ class SpaceRepository implements ISpaceRepository {
     if (search) {
       query = query.where((eb) =>
         eb.or([
-          eb("name", "like", `%${search}%`),
+          eb(
+            eb.fn("lower", ["spaces.name"]),
+            "like",
+            `%${search.toLowerCase()}%`,
+          ),
         ])
       );
     }

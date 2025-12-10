@@ -2,6 +2,7 @@ import { z } from "@hono/zod-openapi";
 
 const getManySpacesQuerySchema = z
   .object({
+    search: z.string().optional().openapi({ example: "Test" }),
     status: z.enum(["active", "inactive", "archived"]).optional().openapi({
       example: "active",
     }),

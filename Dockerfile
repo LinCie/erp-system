@@ -1,6 +1,4 @@
-FROM denoland/deno:alpine
-
-RUN apk add --no-cache libstdc++ libgcc
+FROM denoland/deno:latest
 
 WORKDIR /app
 
