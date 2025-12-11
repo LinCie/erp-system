@@ -31,12 +31,17 @@ class ItemRepository implements IItemRepository {
       .offset((page - 1) * limit);
 
     if (search) {
-      query = query.where((eb) =>
-        eb.or([
-          eb("name", "like", `%${search}%`),
-          eb("sku", "like", `%${search}%`),
-        ])
-      );
+      const searches = search.split(" ").filter(Boolean);
+
+      query = query.where((eb) => {
+        const filters = searches.map((s) =>
+          eb.or([
+            eb("name", "like", `%${s}%`),
+            eb("sku", "like", `%${s}%`),
+          ])
+        );
+        return eb.and(filters);
+      });
     }
 
     if (sort && order) {
