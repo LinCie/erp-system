@@ -65,6 +65,7 @@ class SpaceRepository implements ISpaceRepository {
         "spaces.id",
         "spaces.name",
         "spaces.address",
+        "spaces.code",
         "spaces.status",
         "spaces.notes",
       ])

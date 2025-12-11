@@ -5,6 +5,7 @@ const spaceResponseSchema = z
   .object({
     id: z.number().openapi({ example: 1 }),
     name: z.string().openapi({ example: "My Space" }),
+    code: z.string().openapi({ example: "space-code" }),
     status: z.string().openapi({ example: "active" }),
     created_at: z.string().datetime().optional().openapi({
       example: "2024-01-01T00:00:00Z",
