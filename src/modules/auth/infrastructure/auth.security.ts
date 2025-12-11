@@ -5,7 +5,7 @@ import type {
 } from "../application/auth-security.interface.ts";
 import { IAuthRepository } from "../application/auth-repository.interface.ts";
 
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { sign, verify } from "hono/jwt";
 import { encodeHex } from "@std/encoding/hex";
 
