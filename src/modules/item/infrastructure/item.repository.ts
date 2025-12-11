@@ -23,6 +23,12 @@ class ItemRepository implements IItemRepository {
       withInventory = true,
     } = props;
 
+    let countQuery = this.db
+      .selectFrom("items")
+      .where("space_id", "=", spaceId)
+      .where("status", "=", status)
+      .where("deleted_at", "is", null);
+
     let query = this.db
       .selectFrom("items")
       .where("space_id", "=", spaceId)
@@ -33,16 +39,27 @@ class ItemRepository implements IItemRepository {
     if (search) {
       const searches = search.split(" ").filter(Boolean);
 
-      query = query.where((eb) => {
-        const filters = searches.map((s) =>
-          eb.or([
-            eb("name", "like", `%${s}%`),
-            eb("sku", "like", `%${s}%`),
-          ])
-        );
-        return eb.and(filters);
-      });
+      const searchFilter = (eb: typeof countQuery) =>
+        eb.where((eb) => {
+          const filters = searches.map((s) =>
+            eb.or([
+              eb("name", "like", `%${s}%`),
+              eb("sku", "like", `%${s}%`),
+            ])
+          );
+          return eb.and(filters);
+        });
+
+      countQuery = searchFilter(countQuery);
+      query = searchFilter(query);
     }
+
+    const { total } = await countQuery
+      .select((eb) => eb.fn.count("id").as("total"))
+      .executeTakeFirstOrThrow();
+
+    const totalItems = parseInt(total.toString());
+    const totalPages = Math.ceil(totalItems / limit);
 
     if (sort && order) {
       query = query.orderBy(sort, order);
@@ -55,11 +72,13 @@ class ItemRepository implements IItemRepository {
 
       case "partial":
         query = query.select([
+          "sku",
           "name",
-          "description",
           "price",
+          "description",
           "weight",
           "images",
+          "notes",
         ]);
         break;
     }
@@ -76,7 +95,17 @@ class ItemRepository implements IItemRepository {
       ]);
     }
 
-    return await query.execute() as Item[];
+    const result = await query.execute();
+
+    return {
+      data: result as Item[],
+      metadata: {
+        totalItems,
+        totalPages,
+        currentPage: page,
+        itemsPerPage: limit,
+      },
+    };
   }
 
   async getOne(id: number) {

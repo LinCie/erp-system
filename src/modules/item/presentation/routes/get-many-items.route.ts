@@ -1,6 +1,6 @@
 import { createRoute } from "@hono/zod-openapi";
 import { getManyItemsQuerySchema } from "../validators/getManyItemsQuery.ts";
-import { itemListResponseSchema } from "../schemas/item-response.schema.ts";
+import { GetManyItemsResponseSchema } from "../schemas/item-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 
 const getManyItemsRoute = createRoute({
@@ -14,7 +14,7 @@ const getManyItemsRoute = createRoute({
   },
   responses: {
     200: {
-      content: { "application/json": { schema: itemListResponseSchema } },
+      content: { "application/json": { schema: GetManyItemsResponseSchema } },
       description: "List of items",
     },
     400: {

@@ -1,4 +1,5 @@
 import { z } from "@hono/zod-openapi";
+import { getManyMetadataSchema } from "../../../../shared/presentation/schemas/get-many-metadata.schema.ts";
 
 const itemResponseSchema = z
   .object({
@@ -14,8 +15,9 @@ const itemResponseSchema = z
   })
   .openapi("ItemResponse");
 
-const itemListResponseSchema = z.array(itemResponseSchema).openapi(
-  "ItemListResponse",
-);
+const GetManyItemsResponseSchema = z.object({
+  data: z.array(itemResponseSchema),
+  metadata: getManyMetadataSchema,
+});
 
-export { itemListResponseSchema, itemResponseSchema };
+export { GetManyItemsResponseSchema, itemResponseSchema };
