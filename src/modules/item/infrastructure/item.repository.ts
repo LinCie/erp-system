@@ -119,13 +119,27 @@ class ItemRepository implements IItemRepository {
       throw new Error("Item not found");
     }
 
-    return item;
+    return item as Item;
   }
 
   async create(data: Item) {
+    const insertData = {
+      ...data,
+      created_at: new Date(),
+      updated_at: new Date(),
+      attributes: data.attributes ? JSON.stringify(data.attributes) : null,
+      dimension: data.dimension ? JSON.stringify(data.dimension) : null,
+      images: data.images ? JSON.stringify(data.images) : null,
+      files: data.files ? JSON.stringify(data.files) : null,
+      links: data.links ? JSON.stringify(data.links) : null,
+      options: data.options ? JSON.stringify(data.options) : null,
+      tags: data.tags ? JSON.stringify(data.tags) : null,
+      variants: data.variants ? JSON.stringify(data.variants) : null,
+    };
+
     const created = await this.db
       .insertInto("items")
-      .values({ ...data, created_at: new Date(), updated_at: new Date() })
+      .values(insertData)
       .executeTakeFirst();
 
     if (!created.insertId) {
@@ -136,9 +150,22 @@ class ItemRepository implements IItemRepository {
   }
 
   async update(id: number, data: Omit<Partial<Item>, "id">) {
+    const updateData = {
+      ...data,
+      updated_at: new Date(),
+      attributes: data.attributes ? JSON.stringify(data.attributes) : data.attributes,
+      dimension: data.dimension ? JSON.stringify(data.dimension) : data.dimension,
+      images: data.images ? JSON.stringify(data.images) : data.images,
+      files: data.files ? JSON.stringify(data.files) : data.files,
+      links: data.links ? JSON.stringify(data.links) : data.links,
+      options: data.options ? JSON.stringify(data.options) : data.options,
+      tags: data.tags ? JSON.stringify(data.tags) : data.tags,
+      variants: data.variants ? JSON.stringify(data.variants) : data.variants,
+    };
+
     const updated = await this.db
       .updateTable("items")
-      .set({ ...data, updated_at: new Date() })
+      .set(updateData)
       .where("id", "=", id)
       .executeTakeFirst();
 
