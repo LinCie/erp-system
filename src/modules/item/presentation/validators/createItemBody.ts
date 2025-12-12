@@ -11,30 +11,6 @@ const createItemBodySchema = z
     cost: z.string().openapi({ example: "10000" }),
     price: z.string().openapi({ example: "15000" }),
     weight: z.string().openapi({ example: "1.5" }),
-    attributes: z.record(z.string(), z.unknown()).nullish().optional().openapi({
-      example: {},
-    }),
-    dimension: z.record(z.string(), z.unknown()).nullish().optional().openapi({
-      example: { length: 10, width: 5, height: 3 },
-    }),
-    images: z.record(z.string(), z.unknown()).nullish().optional().openapi({
-      example: {},
-    }),
-    files: z.record(z.string(), z.unknown()).nullish().optional().openapi({
-      example: {},
-    }),
-    links: z.record(z.string(), z.unknown()).nullish().optional().openapi({
-      example: {},
-    }),
-    options: z.record(z.string(), z.unknown()).nullish().optional().openapi({
-      example: {},
-    }),
-    tags: z.record(z.string(), z.unknown()).nullish().optional().openapi({
-      example: {},
-    }),
-    variants: z.record(z.string(), z.unknown()).nullish().optional().openapi({
-      example: {},
-    }),
     notes: z.string().nullish().optional().openapi({
       example: "Additional notes",
     }),

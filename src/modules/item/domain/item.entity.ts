@@ -8,14 +8,6 @@ interface ItemEntity extends BaseEntity {
   cost: string;
   price: string;
   weight: string;
-  attributes?: Record<string, unknown> | null;
-  dimension?: Record<string, unknown> | null;
-  images?: Record<string, unknown> | null;
-  files?: Record<string, unknown> | null;
-  links?: Record<string, unknown> | null;
-  options?: Record<string, unknown> | null;
-  tags?: Record<string, unknown> | null;
-  variants?: Record<string, unknown> | null;
   notes?: string | null;
   model_id?: number | null;
   model_type?: string | null;
