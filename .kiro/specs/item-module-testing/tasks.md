@@ -1,0 +1,96 @@
+# Implementation Plan
+
+- [x] 1. Set up testing infrastructure and dependencies
+  - [x] 1.1 Add test dependencies to deno.json
+    - Add `@std/assert` import from jsr
+    - Add `fast-check` import from npm
+    - Add test tasks (test, test:coverage, test:item)
+    - _Requirements: 8.1, 8.2_
+  - [x] 1.2 Create test utilities directory structure
+    - Create `src/modules/item/__tests__/` directory
+    - Create subdirectories: `fixtures/`, `mocks/`, `arbitraries/`
+    - _Requirements: 7.1, 7.2, 7.3, 7.4_
+
+- [x] 2. Implement test fixtures and mock repository
+  - [x] 2.1 Create item fixtures
+    - Create `src/modules/item/__tests__/fixtures/item.fixtures.ts`
+    - Define validItem, itemsList, and other test data
+    - _Requirements: 7.4_
+  - [x] 2.2 Create mock IItemRepository implementation
+    - Create `src/modules/item/__tests__/mocks/item.repository.mock.ts`
+    - Implement all IItemRepository methods with call tracking
+    - Support configurable responses and error throwing
+    - _Requirements: 7.1_
+  - [x] 2.3 Create fast-check arbitraries for ItemEntity
+    - Create `src/modules/item/__tests__/arbitraries/item.arbitraries.ts`
+    - Define itemEntityArb, partialItemArb, getManyPropsArb
+    - Define numericStringArb for cost/price/weight fields
+    - _Requirements: 7.2_
+
+- [x] 3. Implement ItemService unit tests
+  - [x] 3.1 Create service test file with delegation tests
+    - Create `src/modules/item/application/item.service_test.ts`
+    - Test getMany delegates to repository
+    - Test getOne delegates to repository
+    - Test create delegates to repository
+    - Test update delegates to repository
+    - Test delete delegates to repository
+    - Test error propagation from repository
+    - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
+  - [x] 3.2 Write property test for service delegation
+    - **Property 1: Service Delegation Preserves Arguments**
+    - **Validates: Requirements 1.1, 1.2, 1.3, 1.4, 1.5**
+
+- [x] 4. Implement ItemRepository mapping tests
+  - [x] 4.1 Create repository test file with mapping tests
+    - Create `src/modules/item/infrastructure/item.repository_test.ts`
+    - Test mapToEntity converts database row correctly
+    - Test mapToEntity handles null to undefined conversion
+    - Test mapToInsertable maps all entity fields
+    - Test mapToUpdateable maps only provided fields
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
+  - [x] 4.2 Write property test for entity mapping round-trip
+    - **Property 2: Entity Mapping Round-Trip Consistency**
+    - **Validates: Requirements 2.1, 2.3, 3.1**
+  - [x] 4.3 Write property test for partial update mapping
+    - **Property 3: Partial Update Mapping Completeness**
+    - **Validates: Requirements 2.4, 3.2**
+  - [x] 4.4 Write property test for numeric string preservation
+    - **Property 4: Numeric String Format Preservation**
+    - **Validates: Requirements 2.5, 3.3**
+
+- [x] 5. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 6. Implement ItemRepository CRUD operation tests
+  - [x] 6.1 Create CRUD operation unit tests
+    - Test getMany returns paginated results
+    - Test getMany filters by search term
+    - Test getOne throws error for non-existent id
+    - Test create inserts and returns item with id
+    - Test delete performs soft delete
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
+  - [x] 6.2 Write property test for pagination limit invariant
+    - **Property 5: Pagination Limit Invariant**
+    - **Validates: Requirements 4.1, 5.1**
+  - [x] 6.3 Write property test for search filter correctness
+    - **Property 6: Search Filter Correctness**
+    - **Validates: Requirements 4.2, 5.2**
+  - [x] 6.4 Write property test for soft delete state invariant
+    - **Property 7: Soft Delete State Invariant**
+    - **Validates: Requirements 4.5, 5.3**
+
+- [x] 7. Implement ItemController integration tests
+  - [x] 7.1 Create controller test file with HTTP endpoint tests
+    - Create `src/modules/item/presentation/item.controller_test.ts`
+    - Create test app factory with mock dependencies
+    - Test GET /items returns 200 with items
+    - Test GET /items/:id returns 200 with item
+    - Test POST /items returns 201 with created item
+    - Test PUT /items/:id returns 200 with updated item
+    - Test DELETE /items/:id returns 204
+    - Test requests without JWT return 401
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 7.3_
+
+- [x] 8. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

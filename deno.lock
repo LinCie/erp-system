@@ -1,7 +1,9 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@std/assert@1": "1.0.16",
     "jsr:@std/crypto@^1.0.5": "1.0.5",
+    "jsr:@std/dotenv@0.225": "0.225.5",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "jsr:@std/path@^1.1.3": "1.1.3",
@@ -11,6 +13,7 @@
     "npm:@hono/swagger-ui@~0.5.1": "0.5.2_hono@4.10.7",
     "npm:@hono/zod-openapi@^1.1.5": "1.1.5_hono@4.10.7_zod@4.1.13",
     "npm:bcryptjs@^3.0.2": "3.0.3",
+    "npm:fast-check@3": "3.23.2",
     "npm:hono@^4.10.7": "4.10.7",
     "npm:kysely@~0.28.8": "0.28.8",
     "npm:mysql2@*": "3.15.3",
@@ -18,8 +21,17 @@
     "npm:zod@^4.1.13": "4.1.13"
   },
   "jsr": {
+    "@std/assert@1.0.16": {
+      "integrity": "6a7272ed1eaa77defe76e5ff63ca705d9c495077e2d5fd0126d2b53fc5bd6532",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
+    },
     "@std/crypto@1.0.5": {
       "integrity": "0dcfbb319fe0bba1bd3af904ceb4f948cde1b92979ec1614528380ed308a3b40"
+    },
+    "@std/dotenv@0.225.5": {
+      "integrity": "9ce6f9d0ec3311f74a32535aa1b8c62ed88b1ab91b7f0815797d77a6f60c922f"
     },
     "@std/encoding@1.0.10": {
       "integrity": "8783c6384a2d13abd5e9e87a7ae0520a30e9f56aeeaa3bdf910a3eaaf5c811a1"
@@ -217,6 +229,12 @@
     },
     "extend@3.0.2": {
       "integrity": "sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g=="
+    },
+    "fast-check@3.23.2": {
+      "integrity": "sha512-h5+1OzzfCC3Ef7VbtKdcv7zsstUQwUDlYpUTvjeUsJAssPgLn7QzbboPtL5ro04Mq0rPOsMzl7q5hIbRs2wD1A==",
+      "dependencies": [
+        "pure-rand"
+      ]
     },
     "fetch-blob@3.2.0": {
       "integrity": "sha512-7yAQpD2UMJzLi1Dqv7qFYnPbaPx7ZfFK6PiIxQ4PfkGPyNyl2Ugx+a/umUonmKqjhM4DnfbMvdX6otXq83soQQ==",
@@ -428,6 +446,9 @@
         "minipass"
       ]
     },
+    "pure-rand@6.1.0": {
+      "integrity": "sha512-bVWawvoZoBYpp6yIoQtQXHZjmz35RSVHnUOTefl8Vcjr8snTPY1wnpSPMWekcFwbxI6gtmT7rSYPFvz71ldiOA=="
+    },
     "redis@5.10.0_@redis+client@5.10.0": {
       "integrity": "sha512-0/Y+7IEiTgVGPrLFKy8oAEArSyEJkU0zvgV5xyi9NzNQ+SLZmyFbUsWIbgPcd4UdUh00opXGKlXJwMmsis5Byw==",
       "dependencies": [
@@ -536,7 +557,9 @@
   },
   "workspace": {
     "dependencies": [
+      "jsr:@std/assert@1",
       "jsr:@std/crypto@^1.0.5",
+      "jsr:@std/dotenv@0.225",
       "jsr:@std/encoding@^1.0.10",
       "jsr:@std/path@^1.1.3",
       "jsr:@std/text@^1.0.16",
@@ -544,6 +567,7 @@
       "npm:@hono/swagger-ui@~0.5.1",
       "npm:@hono/zod-openapi@^1.1.5",
       "npm:bcryptjs@^3.0.2",
+      "npm:fast-check@3",
       "npm:hono@^4.10.7",
       "npm:kysely@~0.28.8",
       "npm:mysql2@*",
