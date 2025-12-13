@@ -1,5 +1,5 @@
 import { createRoute } from "@hono/zod-openapi";
-import { getManyItemsQuerySchema } from "../validators/getManyItemsQuery.ts";
+import { getManyItemsQuerySchema } from "../validators/get-many-items-query.validator.ts";
 import { GetManyItemsResponseSchema } from "../schemas/item-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 

@@ -1,9 +1,7 @@
 import { z } from "@hono/zod-openapi";
-import { getManyMetadataSchema } from "../../../../shared/presentation/schemas/get-many-metadata.schema.ts";
 
-const itemResponseSchema = z
+const createItemBodySchema = z
   .object({
-    id: z.number().openapi({ example: 1 }),
     name: z.string().openapi({ example: "My Item" }),
     code: z.string().optional().openapi({ example: "ITEM-001" }),
     description: z.string().optional().openapi({
@@ -33,19 +31,11 @@ const itemResponseSchema = z
     primary_code: z.string().optional().openapi({
       example: "PRIMARY-001",
     }),
-    status: z.string().openapi({ example: "active" }),
-    created_at: z.string().datetime().optional().openapi({
-      example: "2024-01-01T00:00:00Z",
-    }),
-    updated_at: z.string().datetime().optional().openapi({
-      example: "2024-01-01T00:00:00Z",
-    }),
+    status: z.enum(["active", "inactive"]).openapi({ example: "active" }),
   })
-  .openapi("ItemResponse");
+  .openapi("CreateItemBody");
 
-const GetManyItemsResponseSchema = z.object({
-  data: z.array(itemResponseSchema),
-  metadata: getManyMetadataSchema,
-});
+type CreateItemBody = z.infer<typeof createItemBodySchema>;
 
-export { GetManyItemsResponseSchema, itemResponseSchema };
+export { createItemBodySchema };
+export type { CreateItemBody };

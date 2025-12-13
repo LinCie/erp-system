@@ -1,5 +1,5 @@
 import { createRoute } from "@hono/zod-openapi";
-import { createItemBodySchema } from "../validators/createItemBody.ts";
+import { createItemBodySchema } from "../validators/create-item-body.validator.ts";
 import { itemResponseSchema } from "../schemas/item-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 

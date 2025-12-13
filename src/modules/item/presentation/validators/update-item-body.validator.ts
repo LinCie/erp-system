@@ -1,5 +1,5 @@
 import { z } from "@hono/zod-openapi";
-import { createItemBodySchema } from "./createItemBody.ts";
+import { createItemBodySchema } from "./create-item-body.validator.ts";
 
 const updateItemBodySchema = createItemBodySchema.partial().openapi(
   "UpdateItemBody",

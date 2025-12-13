@@ -1,5 +1,5 @@
 import { createRoute } from "@hono/zod-openapi";
-import { itemChatBodySchema } from "../validators/itemChatBody.ts";
+import { itemChatBodySchema } from "../validators/item-chat-body.validator.ts";
 import { chatResponseSchema } from "../schemas/chat-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 

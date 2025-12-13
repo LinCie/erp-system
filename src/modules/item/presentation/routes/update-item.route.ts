@@ -1,6 +1,6 @@
 import { createRoute } from "@hono/zod-openapi";
-import { itemIdParamSchema } from "../validators/itemIdParam.ts";
-import { updateItemBodySchema } from "../validators/updateItemBody.ts";
+import { itemIdParamSchema } from "../validators/item-id-param.validator.ts";
+import { updateItemBodySchema } from "../validators/update-item-body.validator.ts";
 import { itemResponseSchema } from "../schemas/item-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 
