@@ -1,5 +1,5 @@
 import { dirname, fromFileUrl, join } from "@std/path";
-import { toCamelCase, toPascalCase } from "@std/text";
+import { toCamelCase, toKebabCase, toPascalCase } from "@std/text";
 
 const SCRIPT_DIR = dirname(fromFileUrl(import.meta.url));
 const BASE_PATH = join(SCRIPT_DIR, "..", "src", "modules");
@@ -25,8 +25,10 @@ async function createModule(config: ModuleConfig) {
   const { name, plural } = config;
   const pascal = toPascalCase(name);
   const camel = toCamelCase(name);
+  const kebab = toKebabCase(name);
   const pascalPlural = toPascalCase(plural);
   const camelPlural = toCamelCase(plural);
+  const kebabPlural = toKebabCase(plural);
   const modulePath = `${BASE_PATH}/${name}`;
 
   // Check if module exists
@@ -49,10 +51,12 @@ async function createModule(config: ModuleConfig) {
   });
   await Deno.mkdir(`${modulePath}/presentation/schemas`, { recursive: true });
   await Deno.mkdir(`${modulePath}/presentation/routes`, { recursive: true });
+  await Deno.mkdir(`${modulePath}/__tests__/fixtures`, { recursive: true });
+  await Deno.mkdir(`${modulePath}/__tests__/mocks`, { recursive: true });
 
   // Entity
   await Deno.writeTextFile(
-    `${modulePath}/domain/${name}.entity.ts`,
+    `${modulePath}/domain/${kebab}.entity.ts`,
     `import { BaseEntity } from "@/shared/domain/base.entity.ts";
 
 interface ${pascal}Entity extends BaseEntity {
@@ -65,9 +69,9 @@ export type { ${pascal}Entity };
 
   // Repository Interface
   await Deno.writeTextFile(
-    `${modulePath}/application/${name}-repository.interface.ts`,
+    `${modulePath}/application/${kebab}-repository.interface.ts`,
     `import { GetManyPropsType } from "@/shared/application/types/get-all.type.ts";
-import { ${pascal}Entity as ${pascal} } from "../domain/${name}.entity.ts";
+import { ${pascal}Entity as ${pascal} } from "../domain/${kebab}.entity.ts";
 
 type GetMany${pascalPlural}Props = GetManyPropsType;
 
@@ -85,12 +89,12 @@ export type { GetMany${pascalPlural}Props, I${pascal}Repository };
 
   // Service
   await Deno.writeTextFile(
-    `${modulePath}/application/${name}.service.ts`,
+    `${modulePath}/application/${kebab}.service.ts`,
     `import {
   GetMany${pascalPlural}Props,
   I${pascal}Repository,
-} from "./${name}-repository.interface.ts";
-import { ${pascal}Entity as ${pascal} } from "../domain/${name}.entity.ts";
+} from "./${kebab}-repository.interface.ts";
+import { ${pascal}Entity as ${pascal} } from "../domain/${kebab}.entity.ts";
 
 class ${pascal}Service {
   constructor(private readonly ${camel}Repository: I${pascal}Repository) {}
@@ -122,13 +126,13 @@ export { ${pascal}Service };
 
   // Repository
   await Deno.writeTextFile(
-    `${modulePath}/infrastructure/${name}.repository.ts`,
+    `${modulePath}/infrastructure/${kebab}.repository.ts`,
     `import { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
 import {
   GetMany${pascalPlural}Props,
   I${pascal}Repository,
-} from "../application/${name}-repository.interface.ts";
-import { ${pascal}Entity as ${pascal} } from "../domain/${name}.entity.ts";
+} from "../application/${kebab}-repository.interface.ts";
+import { ${pascal}Entity as ${pascal} } from "../domain/${kebab}.entity.ts";
 
 class ${pascal}Repository implements I${pascal}Repository {
   constructor(private readonly db: PersistenceType) {}
@@ -199,7 +203,7 @@ export { ${pascal}Repository };
 
   // Validators
   await Deno.writeTextFile(
-    `${modulePath}/presentation/validators/${name}IdParam.ts`,
+    `${modulePath}/presentation/validators/${kebab}-id-param.ts`,
     `import { z } from "@hono/zod-openapi";
 
 const ${camel}IdParamSchema = z
@@ -216,7 +220,7 @@ export type { ${pascal}IdParams };
   );
 
   await Deno.writeTextFile(
-    `${modulePath}/presentation/validators/create${pascal}Body.ts`,
+    `${modulePath}/presentation/validators/create-${kebab}-body.ts`,
     `import { z } from "@hono/zod-openapi";
 
 const create${pascal}BodySchema = z
@@ -234,9 +238,9 @@ export type { Create${pascal}Body };
   );
 
   await Deno.writeTextFile(
-    `${modulePath}/presentation/validators/update${pascal}Body.ts`,
+    `${modulePath}/presentation/validators/update-${kebab}-body.ts`,
     `import { z } from "@hono/zod-openapi";
-import { create${pascal}BodySchema } from "./create${pascal}Body.ts";
+import { create${pascal}BodySchema } from "./create-${kebab}-body.ts";
 
 const update${pascal}BodySchema = create${pascal}BodySchema.partial().openapi("Update${pascal}Body");
 
@@ -248,7 +252,7 @@ export type { Update${pascal}Body };
   );
 
   await Deno.writeTextFile(
-    `${modulePath}/presentation/validators/getMany${pascalPlural}Query.ts`,
+    `${modulePath}/presentation/validators/get-many-${kebabPlural}-query.ts`,
     `import { z } from "@hono/zod-openapi";
 
 const getMany${pascalPlural}QuerySchema = z
@@ -268,7 +272,7 @@ export type { GetMany${pascalPlural}Query };
 
   // Schemas
   await Deno.writeTextFile(
-    `${modulePath}/presentation/schemas/${name}-response.schema.ts`,
+    `${modulePath}/presentation/schemas/${kebab}-response.schema.ts`,
     `import { z } from "@hono/zod-openapi";
 
 const ${camel}ResponseSchema = z
@@ -312,10 +316,10 @@ export { errorResponseSchema };
 
   // Routes
   await Deno.writeTextFile(
-    `${modulePath}/presentation/routes/get-many-${plural}.route.ts`,
+    `${modulePath}/presentation/routes/get-many-${kebabPlural}.route.ts`,
     `import { createRoute } from "@hono/zod-openapi";
-import { getMany${pascalPlural}QuerySchema } from "../validators/getMany${pascalPlural}Query.ts";
-import { ${camelPlural}ResponseSchema } from "../schemas/${name}-response.schema.ts";
+import { getMany${pascalPlural}QuerySchema } from "../validators/get-many-${kebabPlural}-query.ts";
+import { ${camelPlural}ResponseSchema } from "../schemas/${kebab}-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 
 const getMany${pascalPlural}Route = createRoute({
@@ -344,10 +348,10 @@ export { getMany${pascalPlural}Route };
   );
 
   await Deno.writeTextFile(
-    `${modulePath}/presentation/routes/get-one-${name}.route.ts`,
+    `${modulePath}/presentation/routes/get-one-${kebab}.route.ts`,
     `import { createRoute } from "@hono/zod-openapi";
-import { ${camel}IdParamSchema } from "../validators/${name}IdParam.ts";
-import { ${camel}ResponseSchema } from "../schemas/${name}-response.schema.ts";
+import { ${camel}IdParamSchema } from "../validators/${kebab}-id-param.ts";
+import { ${camel}ResponseSchema } from "../schemas/${kebab}-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 
 const getOne${pascal}Route = createRoute({
@@ -376,10 +380,10 @@ export { getOne${pascal}Route };
   );
 
   await Deno.writeTextFile(
-    `${modulePath}/presentation/routes/create-${name}.route.ts`,
+    `${modulePath}/presentation/routes/create-${kebab}.route.ts`,
     `import { createRoute } from "@hono/zod-openapi";
-import { create${pascal}BodySchema } from "../validators/create${pascal}Body.ts";
-import { ${camel}ResponseSchema } from "../schemas/${name}-response.schema.ts";
+import { create${pascal}BodySchema } from "../validators/create-${kebab}-body.ts";
+import { ${camel}ResponseSchema } from "../schemas/${kebab}-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 
 const create${pascal}Route = createRoute({
@@ -412,11 +416,11 @@ export { create${pascal}Route };
   );
 
   await Deno.writeTextFile(
-    `${modulePath}/presentation/routes/update-${name}.route.ts`,
+    `${modulePath}/presentation/routes/update-${kebab}.route.ts`,
     `import { createRoute } from "@hono/zod-openapi";
-import { ${camel}IdParamSchema } from "../validators/${name}IdParam.ts";
-import { update${pascal}BodySchema } from "../validators/update${pascal}Body.ts";
-import { ${camel}ResponseSchema } from "../schemas/${name}-response.schema.ts";
+import { ${camel}IdParamSchema } from "../validators/${kebab}-id-param.ts";
+import { update${pascal}BodySchema } from "../validators/update-${kebab}-body.ts";
+import { ${camel}ResponseSchema } from "../schemas/${kebab}-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 
 const update${pascal}Route = createRoute({
@@ -450,9 +454,9 @@ export { update${pascal}Route };
   );
 
   await Deno.writeTextFile(
-    `${modulePath}/presentation/routes/delete-${name}.route.ts`,
+    `${modulePath}/presentation/routes/delete-${kebab}.route.ts`,
     `import { createRoute } from "@hono/zod-openapi";
-import { ${camel}IdParamSchema } from "../validators/${name}IdParam.ts";
+import { ${camel}IdParamSchema } from "../validators/${kebab}-id-param.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 
 const delete${pascal}Route = createRoute({
@@ -481,17 +485,17 @@ export { delete${pascal}Route };
 
   // Controller
   await Deno.writeTextFile(
-    `${modulePath}/presentation/${name}.controller.ts`,
+    `${modulePath}/presentation/${kebab}.controller.ts`,
     `import type { JwtVariables } from "hono/jwt";
 
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { jwt } from "hono/jwt";
-import { ${pascal}Service } from "../application/${name}.service.ts";
-import { getMany${pascalPlural}Route } from "./routes/get-many-${plural}.route.ts";
-import { getOne${pascal}Route } from "./routes/get-one-${name}.route.ts";
-import { create${pascal}Route } from "./routes/create-${name}.route.ts";
-import { update${pascal}Route } from "./routes/update-${name}.route.ts";
-import { delete${pascal}Route } from "./routes/delete-${name}.route.ts";
+import { ${pascal}Service } from "../application/${kebab}.service.ts";
+import { getMany${pascalPlural}Route } from "./routes/get-many-${kebabPlural}.route.ts";
+import { getOne${pascal}Route } from "./routes/get-one-${kebab}.route.ts";
+import { create${pascal}Route } from "./routes/create-${kebab}.route.ts";
+import { update${pascal}Route } from "./routes/update-${kebab}.route.ts";
+import { delete${pascal}Route } from "./routes/delete-${kebab}.route.ts";
 
 function define${pascal}Controller(service: ${pascal}Service) {
   const app = new OpenAPIHono<{ Variables: JwtVariables }>();
@@ -541,11 +545,11 @@ export { define${pascal}Controller };
 
   // Module
   await Deno.writeTextFile(
-    `${modulePath}/presentation/${name}.module.ts`,
+    `${modulePath}/presentation/${kebab}.module.ts`,
     `import { getDatabase } from "@/shared/infrastructure/persistence/index.ts";
-import { ${pascal}Repository } from "../infrastructure/${name}.repository.ts";
-import { ${pascal}Service } from "../application/${name}.service.ts";
-import { define${pascal}Controller } from "./${name}.controller.ts";
+import { ${pascal}Repository } from "../infrastructure/${kebab}.repository.ts";
+import { ${pascal}Service } from "../application/${kebab}.service.ts";
+import { define${pascal}Controller } from "./${kebab}.controller.ts";
 
 const db = getDatabase();
 
@@ -557,31 +561,458 @@ export { ${camel}Controller };
 `,
   );
 
+  // Test Fixtures
+  await Deno.writeTextFile(
+    `${modulePath}/__tests__/fixtures/${kebab}.fixtures.ts`,
+    `import type { ${pascal}Entity } from "../../domain/${kebab}.entity.ts";
+
+/**
+ * Valid ${name} fixture with all required fields
+ */
+const valid${pascal}: ${pascal}Entity = {
+  id: 1,
+  name: "Test ${pascal}",
+  status: "active",
+  created_at: new Date("2024-01-01T00:00:00Z"),
+  updated_at: new Date("2024-01-01T00:00:00Z"),
+};
+
+/**
+ * ${pascal} without optional fields
+ */
+const minimal${pascal}: ${pascal}Entity = {
+  id: 2,
+  name: "Minimal ${pascal}",
+  status: "active",
+};
+
+/**
+ * Inactive ${name} fixture
+ */
+const inactive${pascal}: ${pascal}Entity = {
+  id: 3,
+  name: "Inactive ${pascal}",
+  status: "inactive",
+};
+
+/**
+ * Archived (soft-deleted) ${name} fixture
+ */
+const archived${pascal}: ${pascal}Entity = {
+  id: 4,
+  name: "Archived ${pascal}",
+  status: "archived",
+  deleted_at: new Date("2024-01-15T00:00:00Z"),
+};
+
+/**
+ * List of ${plural} for testing getMany operations
+ */
+const ${camelPlural}List: ${pascal}Entity[] = [
+  valid${pascal},
+  minimal${pascal},
+  inactive${pascal},
+  {
+    id: 5,
+    name: "Fourth ${pascal}",
+    status: "active",
+  },
+  {
+    id: 6,
+    name: "Fifth ${pascal}",
+    status: "active",
+  },
+];
+
+/**
+ * ${pascal} data without ID (for create operations)
+ */
+const create${pascal}Data: Omit<${pascal}Entity, "id"> = {
+  name: "New ${pascal}",
+  status: "active",
+};
+
+/**
+ * Partial ${name} data (for update operations)
+ */
+const update${pascal}Data: Partial<${pascal}Entity> = {
+  name: "Updated ${pascal} Name",
+};
+
+export {
+  archived${pascal},
+  create${pascal}Data,
+  inactive${pascal},
+  ${camelPlural}List,
+  minimal${pascal},
+  update${pascal}Data,
+  valid${pascal},
+};
+`,
+  );
+
+  // Mock Repository
+  await Deno.writeTextFile(
+    `${modulePath}/__tests__/mocks/${kebab}.repository.mock.ts`,
+    `// deno-lint-ignore-file require-await
+import type {
+  GetMany${pascalPlural}Props,
+  I${pascal}Repository,
+} from "../../application/${kebab}-repository.interface.ts";
+import type { ${pascal}Entity } from "../../domain/${kebab}.entity.ts";
+
+/**
+ * Configuration options for Mock${pascal}Repository
+ */
+interface MockRepositoryOptions {
+  /** Initial ${plural} to populate the mock repository */
+  ${camelPlural}?: ${pascal}Entity[];
+  /** Error to throw on method calls */
+  shouldThrow?: Error;
+}
+
+/**
+ * Represents a method call made to the mock repository
+ */
+interface MethodCall {
+  method: string;
+  args: unknown[];
+}
+
+/**
+ * Mock implementation of I${pascal}Repository for testing
+ */
+class Mock${pascal}Repository implements I${pascal}Repository {
+  private ${camelPlural}: ${pascal}Entity[] = [];
+  private shouldThrow?: Error;
+  public calls: MethodCall[] = [];
+
+  constructor(options?: MockRepositoryOptions) {
+    this.${camelPlural} = options?.${camelPlural} ?? [];
+    this.shouldThrow = options?.shouldThrow;
+  }
+
+  /**
+   * Reset the mock state
+   */
+  reset(options?: MockRepositoryOptions): void {
+    this.${camelPlural} = options?.${camelPlural} ?? [];
+    this.shouldThrow = options?.shouldThrow;
+    this.calls = [];
+  }
+
+  /**
+   * Configure the mock to throw an error on subsequent calls
+   */
+  setError(error: Error): void {
+    this.shouldThrow = error;
+  }
+
+  /**
+   * Clear any configured error
+   */
+  clearError(): void {
+    this.shouldThrow = undefined;
+  }
+
+  /**
+   * Get all recorded method calls
+   */
+  getCalls(): MethodCall[] {
+    return this.calls;
+  }
+
+  /**
+   * Get calls for a specific method
+   */
+  getCallsForMethod(methodName: string): MethodCall[] {
+    return this.calls.filter((call) => call.method === methodName);
+  }
+
+  /**
+   * Clear all recorded calls
+   */
+  clearCalls(): void {
+    this.calls = [];
+  }
+
+  async getMany(props: GetMany${pascalPlural}Props): Promise<${pascal}Entity[]> {
+    this.calls.push({ method: "getMany", args: [props] });
+
+    if (this.shouldThrow) {
+      throw this.shouldThrow;
+    }
+
+    let filtered = [...this.${camelPlural}];
+
+    // Filter by status if provided
+    if (props.status) {
+      filtered = filtered.filter((item) => item.status === props.status);
+    }
+
+    // Apply pagination
+    const page = props.page ?? 1;
+    const limit = props.limit ?? 10;
+    const offset = (page - 1) * limit;
+
+    return filtered.slice(offset, offset + limit);
+  }
+
+  async getOne(id: number): Promise<${pascal}Entity> {
+    this.calls.push({ method: "getOne", args: [id] });
+
+    if (this.shouldThrow) {
+      throw this.shouldThrow;
+    }
+
+    const item = this.${camelPlural}.find((item) => item.id === id);
+    if (!item) {
+      throw new Error("${pascal} not found");
+    }
+
+    return item;
+  }
+
+  async create(data: Omit<${pascal}Entity, "id">): Promise<${pascal}Entity> {
+    this.calls.push({ method: "create", args: [data] });
+
+    if (this.shouldThrow) {
+      throw this.shouldThrow;
+    }
+
+    const newId = this.${camelPlural}.length > 0
+      ? Math.max(...this.${camelPlural}.map((i) => i.id)) + 1
+      : 1;
+
+    const newItem: ${pascal}Entity = {
+      ...data,
+      id: newId,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+
+    this.${camelPlural}.push(newItem);
+    return newItem;
+  }
+
+  async update(id: number, data: Partial<${pascal}Entity>): Promise<${pascal}Entity> {
+    this.calls.push({ method: "update", args: [id, data] });
+
+    if (this.shouldThrow) {
+      throw this.shouldThrow;
+    }
+
+    const index = this.${camelPlural}.findIndex((i) => i.id === id);
+    if (index === -1) {
+      throw new Error("${pascal} not found");
+    }
+
+    const updated: ${pascal}Entity = {
+      ...this.${camelPlural}[index],
+      ...data,
+      id,
+      updated_at: new Date(),
+    };
+
+    this.${camelPlural}[index] = updated;
+    return updated;
+  }
+
+  async delete(id: number): Promise<void> {
+    this.calls.push({ method: "delete", args: [id] });
+
+    if (this.shouldThrow) {
+      throw this.shouldThrow;
+    }
+
+    const index = this.${camelPlural}.findIndex((item) => item.id === id);
+    if (index === -1) {
+      throw new Error("${pascal} not found");
+    }
+
+    // Perform soft delete
+    this.${camelPlural}[index] = {
+      ...this.${camelPlural}[index],
+      status: "archived",
+      deleted_at: new Date(),
+    };
+  }
+}
+
+export { Mock${pascal}Repository };
+export type { MethodCall, MockRepositoryOptions };
+`,
+  );
+
+  // Service Test
+  await Deno.writeTextFile(
+    `${modulePath}/application/${kebab}.service_test.ts`,
+    `import { assertEquals, assertRejects } from "@std/assert";
+import { ${pascal}Service } from "./${kebab}.service.ts";
+import { Mock${pascal}Repository } from "../__tests__/mocks/${kebab}.repository.mock.ts";
+import { ${camelPlural}List, create${pascal}Data, update${pascal}Data } from "../__tests__/fixtures/${kebab}.fixtures.ts";
+import type { GetMany${pascalPlural}Props } from "./${kebab}-repository.interface.ts";
+
+/**
+ * Unit tests for ${pascal}Service
+ * Tests verify that the service correctly delegates operations to the repository
+ */
+
+Deno.test("${pascal}Service - getMany delegates to repository", async () => {
+  const mockRepo = new Mock${pascal}Repository({ ${camelPlural}: ${camelPlural}List });
+  const service = new ${pascal}Service(mockRepo);
+  const props: GetMany${pascalPlural}Props = { page: 1, limit: 10 };
+
+  const result = await service.getMany(props);
+
+  const calls = mockRepo.getCallsForMethod("getMany");
+  assertEquals(calls.length, 1, "getMany should be called once");
+  assertEquals(calls[0].args[0], props, "getMany should receive the same props");
+  assertEquals(result.length, ${camelPlural}List.length, "Should return all ${plural}");
+});
+
+Deno.test("${pascal}Service - getOne delegates to repository", async () => {
+  const mockRepo = new Mock${pascal}Repository({ ${camelPlural}: ${camelPlural}List });
+  const service = new ${pascal}Service(mockRepo);
+  const id = 1;
+
+  const result = await service.getOne(id);
+
+  const calls = mockRepo.getCallsForMethod("getOne");
+  assertEquals(calls.length, 1, "getOne should be called once");
+  assertEquals(calls[0].args[0], id, "getOne should receive the same id");
+  assertEquals(result.id, id, "Should return the correct ${name}");
+});
+
+Deno.test("${pascal}Service - create delegates to repository", async () => {
+  const mockRepo = new Mock${pascal}Repository({ ${camelPlural}: [] });
+  const service = new ${pascal}Service(mockRepo);
+
+  const result = await service.create(create${pascal}Data);
+
+  const calls = mockRepo.getCallsForMethod("create");
+  assertEquals(calls.length, 1, "create should be called once");
+  assertEquals(calls[0].args[0], create${pascal}Data, "create should receive the same data");
+  assertEquals(result.name, create${pascal}Data.name, "Should return the created ${name}");
+});
+
+Deno.test("${pascal}Service - update delegates to repository", async () => {
+  const mockRepo = new Mock${pascal}Repository({ ${camelPlural}: ${camelPlural}List });
+  const service = new ${pascal}Service(mockRepo);
+  const id = 1;
+
+  const result = await service.update(id, update${pascal}Data);
+
+  const calls = mockRepo.getCallsForMethod("update");
+  assertEquals(calls.length, 1, "update should be called once");
+  assertEquals(calls[0].args[0], id, "update should receive the same id");
+  assertEquals(calls[0].args[1], update${pascal}Data, "update should receive the same data");
+  assertEquals(result.name, update${pascal}Data.name, "Should return the updated ${name}");
+});
+
+Deno.test("${pascal}Service - delete delegates to repository", async () => {
+  const mockRepo = new Mock${pascal}Repository({ ${camelPlural}: ${camelPlural}List });
+  const service = new ${pascal}Service(mockRepo);
+  const id = 1;
+
+  await service.delete(id);
+
+  const calls = mockRepo.getCallsForMethod("delete");
+  assertEquals(calls.length, 1, "delete should be called once");
+  assertEquals(calls[0].args[0], id, "delete should receive the same id");
+});
+
+Deno.test("${pascal}Service - getMany propagates repository errors", async () => {
+  const error = new Error("Database connection failed");
+  const mockRepo = new Mock${pascal}Repository({ shouldThrow: error });
+  const service = new ${pascal}Service(mockRepo);
+
+  await assertRejects(
+    () => service.getMany({}),
+    Error,
+    "Database connection failed",
+  );
+});
+
+Deno.test("${pascal}Service - getOne propagates repository errors", async () => {
+  const error = new Error("${pascal} not found");
+  const mockRepo = new Mock${pascal}Repository({ shouldThrow: error });
+  const service = new ${pascal}Service(mockRepo);
+
+  await assertRejects(
+    () => service.getOne(999),
+    Error,
+    "${pascal} not found",
+  );
+});
+
+Deno.test("${pascal}Service - create propagates repository errors", async () => {
+  const error = new Error("Validation failed");
+  const mockRepo = new Mock${pascal}Repository({ shouldThrow: error });
+  const service = new ${pascal}Service(mockRepo);
+
+  await assertRejects(
+    () => service.create(create${pascal}Data),
+    Error,
+    "Validation failed",
+  );
+});
+
+Deno.test("${pascal}Service - update propagates repository errors", async () => {
+  const error = new Error("${pascal} not found");
+  const mockRepo = new Mock${pascal}Repository({ shouldThrow: error });
+  const service = new ${pascal}Service(mockRepo);
+
+  await assertRejects(
+    () => service.update(999, update${pascal}Data),
+    Error,
+    "${pascal} not found",
+  );
+});
+
+Deno.test("${pascal}Service - delete propagates repository errors", async () => {
+  const error = new Error("${pascal} not found");
+  const mockRepo = new Mock${pascal}Repository({ shouldThrow: error });
+  const service = new ${pascal}Service(mockRepo);
+
+  await assertRejects(
+    () => service.delete(999),
+    Error,
+    "${pascal} not found",
+  );
+});
+`,
+  );
+
   console.log(`✓ Module '${pascal}' created at ${modulePath}`);
   console.log(`
 Files created:
-  - domain/${name}.entity.ts
-  - application/${name}-repository.interface.ts
-  - application/${name}.service.ts
-  - infrastructure/${name}.repository.ts
-  - presentation/${name}.controller.ts
-  - presentation/${name}.module.ts
-  - presentation/validators/${name}IdParam.ts
-  - presentation/validators/create${pascal}Body.ts
-  - presentation/validators/update${pascal}Body.ts
-  - presentation/validators/getMany${pascalPlural}Query.ts
-  - presentation/schemas/${name}-response.schema.ts
+  - domain/${kebab}.entity.ts
+  - application/${kebab}-repository.interface.ts
+  - application/${kebab}.service.ts
+  - application/${kebab}.service_test.ts
+  - infrastructure/${kebab}.repository.ts
+  - presentation/${kebab}.controller.ts
+  - presentation/${kebab}.module.ts
+  - presentation/validators/${kebab}-id-param.ts
+  - presentation/validators/create-${kebab}-body.ts
+  - presentation/validators/update-${kebab}-body.ts
+  - presentation/validators/get-many-${kebabPlural}-query.ts
+  - presentation/schemas/${kebab}-response.schema.ts
   - presentation/schemas/error-response.schema.ts
-  - presentation/routes/get-many-${plural}.route.ts
-  - presentation/routes/get-one-${name}.route.ts
-  - presentation/routes/create-${name}.route.ts
-  - presentation/routes/update-${name}.route.ts
-  - presentation/routes/delete-${name}.route.ts
+  - presentation/routes/get-many-${kebabPlural}.route.ts
+  - presentation/routes/get-one-${kebab}.route.ts
+  - presentation/routes/create-${kebab}.route.ts
+  - presentation/routes/update-${kebab}.route.ts
+  - presentation/routes/delete-${kebab}.route.ts
+  - __tests__/fixtures/${kebab}.fixtures.ts
+  - __tests__/mocks/${kebab}.repository.mock.ts
 
 Don't forget to:
   1. Add the table to your database schema
   2. Register the controller in main.ts:
-     app.route("/${plural}", ${camel}Controller);`);
+     app.route("/${plural}", ${camel}Controller);
+  3. Run tests with: deno test src/modules/${name}/`);
 }
 
 const moduleConfig = getModuleConfig();
