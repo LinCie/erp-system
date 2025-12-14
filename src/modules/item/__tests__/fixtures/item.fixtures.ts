@@ -30,6 +30,7 @@ const minimalItem: ItemEntity = {
   price: "8.00",
   weight: "0.50",
   status: "active",
+  space_id: 1,
 };
 
 /**
@@ -42,6 +43,7 @@ const inactiveItem: ItemEntity = {
   price: "30.00",
   weight: "2.00",
   status: "inactive",
+  space_id: 1,
   sku: "TEST-002",
 };
 
@@ -55,6 +57,7 @@ const archivedItem: ItemEntity = {
   price: "25.00",
   weight: "1.00",
   status: "archived",
+  space_id: 1,
   sku: "TEST-003",
   deleted_at: new Date("2024-01-15T00:00:00Z"),
 };
@@ -73,6 +76,7 @@ const itemsList: ItemEntity[] = [
     price: "18.75",
     weight: "1.25",
     status: "active",
+    space_id: 1,
     sku: "TEST-004",
   },
   {
@@ -82,6 +86,7 @@ const itemsList: ItemEntity[] = [
     price: "12.00",
     weight: "0.75",
     status: "active",
+    space_id: 1,
     sku: "TEST-005",
   },
 ];
@@ -105,6 +110,7 @@ const createItemData: Omit<ItemEntity, "id"> = {
   price: "40.00",
   weight: "3.00",
   status: "active",
+  space_id: 1,
   sku: "NEW-001",
   description: "A new item to be created",
 };

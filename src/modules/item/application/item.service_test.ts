@@ -62,6 +62,7 @@ Deno.test("ItemService - create delegates to repository", async () => {
     price: "15.00",
     weight: "1.50",
     status: "active",
+    space_id: 1,
     sku: "NEW-001",
   };
 
@@ -164,6 +165,7 @@ Deno.test("ItemService - create propagates repository errors", async () => {
     price: "15.00",
     weight: "1.50",
     status: "active",
+    space_id: 1,
   };
 
   // Act & Assert

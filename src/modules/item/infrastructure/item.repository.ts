@@ -1,5 +1,3 @@
-import type { Insertable, Selectable, Updateable } from "kysely";
-import type { Items as ItemDatabase } from "@/shared/infrastructure/persistence/database.d.ts";
 import type { ItemEntity as Item } from "../domain/item.entity.ts";
 
 import { jsonArrayFrom } from "kysely/helpers/mysql";
@@ -9,9 +7,13 @@ import {
   GetManyItemsProps,
   IItemRepository,
 } from "../application/item-repository.interface.ts";
+import { ItemMapper } from "./item.mapper.ts";
 
 class ItemRepository implements IItemRepository {
-  constructor(private readonly db: PersistenceType) {}
+  constructor(
+    private readonly db: PersistenceType,
+    private readonly mapper: ItemMapper,
+  ) {}
 
   async getMany(props: GetManyItemsProps) {
     const {
@@ -72,12 +74,16 @@ class ItemRepository implements IItemRepository {
 
       case "partial":
         query = query.select([
+          "id",
           "sku",
           "name",
           "price",
+          "cost",
+          "status",
           "description",
           "weight",
           "notes",
+          "space_id",
         ]);
         break;
     }
@@ -97,7 +103,7 @@ class ItemRepository implements IItemRepository {
     const result = await query.execute();
 
     return {
-      data: result.map((row) => this.mapToEntity(row)),
+      data: result.map((row) => this.mapper.toEntity(row)),
       metadata: {
         totalItems,
         totalPages,
@@ -121,6 +127,7 @@ class ItemRepository implements IItemRepository {
         "description",
         "weight",
         "notes",
+        "space_id",
       ])
       .executeTakeFirst();
 
@@ -128,15 +135,19 @@ class ItemRepository implements IItemRepository {
       throw new Error("Item not found");
     }
 
-    return this.mapToEntity(item);
+    return this.mapper.toEntity(item);
   }
 
   async create(data: Item) {
-    const insertable = this.mapToInsertable(data);
+    const insertable = this.mapper.toInsertable(data);
 
     const created = await this.db
       .insertInto("items")
-      .values(insertable)
+      .values({
+        ...insertable,
+        created_at: new Date(),
+        updated_at: new Date(),
+      })
       .executeTakeFirst();
 
     if (!created.insertId) {
@@ -147,11 +158,14 @@ class ItemRepository implements IItemRepository {
   }
 
   async update(id: number, data: Partial<Item>) {
-    const updateable = this.mapToUpdateable(data);
+    const updateable = this.mapper.toUpdateable(data);
 
     const updated = await this.db
       .updateTable("items")
-      .set(updateable)
+      .set({
+        ...updateable,
+        updated_at: new Date(),
+      })
       .where("id", "=", id)
       .executeTakeFirst();
 
@@ -175,87 +189,6 @@ class ItemRepository implements IItemRepository {
     if (!deleted) {
       throw new Error("Item not deleted");
     }
-  }
-
-  private mapToEntity(row: Partial<Selectable<ItemDatabase>>): Item {
-    return {
-      id: row.id!,
-      name: row.name!,
-      cost: row.cost!,
-      price: row.price!,
-      weight: row.weight!,
-      status: row.status!,
-      code: row.code ?? undefined,
-      description: row.description ?? undefined,
-      sku: row.sku ?? undefined,
-      notes: row.notes ?? undefined,
-      model_id: row.model_id ?? undefined,
-      model_type: row.model_type ?? undefined,
-      parent_id: row.parent_id ?? undefined,
-      parent_type: row.parent_type ?? undefined,
-      space_id: row.space_id ?? undefined,
-      space_type: row.space_type ?? undefined,
-      type_id: row.type_id ?? undefined,
-      type_type: row.type_type ?? undefined,
-      primary_code: row.primary_code ?? undefined,
-      created_at: row.created_at ?? undefined,
-      updated_at: row.updated_at ?? undefined,
-      deleted_at: row.deleted_at ?? undefined,
-    };
-  }
-
-  private mapToInsertable(
-    item: Item,
-  ): Insertable<ItemDatabase> {
-    return {
-      name: item.name,
-      code: item.code,
-      description: item.description,
-      sku: item.sku,
-      cost: item.cost,
-      price: item.price,
-      weight: item.weight,
-      notes: item.notes,
-      model_id: item.model_id,
-      model_type: item.model_type,
-      parent_id: item.parent_id,
-      parent_type: item.parent_type,
-      space_id: item.space_id,
-      space_type: item.space_type,
-      type_id: item.type_id,
-      type_type: item.type_type,
-      primary_code: item.primary_code,
-      status: item.status,
-      created_at: item.created_at,
-      updated_at: item.updated_at,
-      deleted_at: item.deleted_at,
-    };
-  }
-
-  private mapToUpdateable(item: Partial<Item>): Updateable<ItemDatabase> {
-    return {
-      name: item.name,
-      code: item.code,
-      description: item.description,
-      sku: item.sku,
-      cost: item.cost,
-      price: item.price,
-      weight: item.weight,
-      notes: item.notes,
-      model_id: item.model_id,
-      model_type: item.model_type,
-      parent_id: item.parent_id,
-      parent_type: item.parent_type,
-      space_id: item.space_id,
-      space_type: item.space_type,
-      type_id: item.type_id,
-      type_type: item.type_type,
-      primary_code: item.primary_code,
-      status: item.status,
-      created_at: item.created_at,
-      updated_at: item.updated_at,
-      deleted_at: item.deleted_at,
-    };
   }
 }
 

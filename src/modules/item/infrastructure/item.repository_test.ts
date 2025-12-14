@@ -1,7 +1,6 @@
 import { assertEquals, assertExists, assertRejects } from "@std/assert";
 import { ItemRepository } from "./item.repository.ts";
-import type { Selectable } from "kysely";
-import type { Items as ItemDatabase } from "@/shared/infrastructure/persistence/database.d.ts";
+import { ItemMapper } from "./item.mapper.ts";
 import type { ItemEntity } from "../domain/item.entity.ts";
 import fc from "fast-check";
 import {
@@ -14,31 +13,11 @@ import { load } from "@std/dotenv";
 // Load environment variables for tests
 await load({ export: true });
 
-// Helper to access private methods for testing
-class TestableItemRepository extends ItemRepository {
-  public testMapToEntity(row: Partial<Selectable<ItemDatabase>>): ItemEntity {
-    // deno-lint-ignore no-explicit-any
-    return (this as any).mapToEntity(row);
-  }
+// Create mapper instance for testing
+const mapper = new ItemMapper();
 
-  public testMapToInsertable(item: ItemEntity) {
-    // deno-lint-ignore no-explicit-any
-    return (this as any).mapToInsertable(item);
-  }
-
-  public testMapToUpdateable(item: Partial<ItemEntity>) {
-    // deno-lint-ignore no-explicit-any
-    return (this as any).mapToUpdateable(item);
-  }
-}
-
-// Create a mock database instance (not used for mapping tests)
-// deno-lint-ignore no-explicit-any
-const mockDb = {} as any;
-const repository = new TestableItemRepository(mockDb);
-
-Deno.test("mapToEntity converts database row correctly", () => {
-  const dbRow: Partial<Selectable<ItemDatabase>> = {
+Deno.test("ItemMapper.toEntity converts database row correctly", () => {
+  const dbRow = {
     id: 1,
     name: "Test Item",
     cost: "10.00",
@@ -54,7 +33,7 @@ Deno.test("mapToEntity converts database row correctly", () => {
     updated_at: new Date("2024-01-02"),
   };
 
-  const entity = repository.testMapToEntity(dbRow);
+  const entity = mapper.toEntity(dbRow);
 
   assertEquals(entity.id, 1);
   assertEquals(entity.name, "Test Item");
@@ -71,8 +50,8 @@ Deno.test("mapToEntity converts database row correctly", () => {
   assertExists(entity.updated_at);
 });
 
-Deno.test("mapToEntity handles null to undefined conversion", () => {
-  const dbRow: Partial<Selectable<ItemDatabase>> = {
+Deno.test("ItemMapper.toEntity handles null to undefined conversion", () => {
+  const dbRow = {
     id: 1,
     name: "Test Item",
     cost: "10.00",
@@ -83,21 +62,13 @@ Deno.test("mapToEntity handles null to undefined conversion", () => {
     code: null,
     description: null,
     notes: null,
-    model_id: null,
-    model_type: null,
-    parent_id: null,
-    parent_type: null,
-    space_id: null,
-    space_type: null,
-    type_id: null,
-    type_type: null,
-    primary_code: null,
+    space_id: 1,
     created_at: null,
     updated_at: null,
     deleted_at: null,
   };
 
-  const entity = repository.testMapToEntity(dbRow);
+  const entity = mapper.toEntity(dbRow);
 
   // Required fields should be present
   assertEquals(entity.id, 1);
@@ -106,27 +77,19 @@ Deno.test("mapToEntity handles null to undefined conversion", () => {
   assertEquals(entity.price, "15.00");
   assertEquals(entity.weight, "1.50");
   assertEquals(entity.status, "active");
+  assertEquals(entity.space_id, 1);
 
   // Null values should be converted to undefined
   assertEquals(entity.sku, undefined);
   assertEquals(entity.code, undefined);
   assertEquals(entity.description, undefined);
   assertEquals(entity.notes, undefined);
-  assertEquals(entity.model_id, undefined);
-  assertEquals(entity.model_type, undefined);
-  assertEquals(entity.parent_id, undefined);
-  assertEquals(entity.parent_type, undefined);
-  assertEquals(entity.space_id, undefined);
-  assertEquals(entity.space_type, undefined);
-  assertEquals(entity.type_id, undefined);
-  assertEquals(entity.type_type, undefined);
-  assertEquals(entity.primary_code, undefined);
   assertEquals(entity.created_at, undefined);
   assertEquals(entity.updated_at, undefined);
   assertEquals(entity.deleted_at, undefined);
 });
 
-Deno.test("mapToInsertable maps all entity fields", () => {
+Deno.test("ItemMapper.toInsertable maps all entity fields", () => {
   const entity: ItemEntity = {
     id: 1,
     name: "Test Item",
@@ -138,20 +101,12 @@ Deno.test("mapToInsertable maps all entity fields", () => {
     code: "ITEM-001",
     description: "Test description",
     notes: "Test notes",
-    model_id: 10,
-    model_type: "model",
-    parent_id: 20,
-    parent_type: "parent",
     space_id: 1,
-    space_type: "space",
-    type_id: 30,
-    type_type: "type",
-    primary_code: "PRIMARY-001",
     created_at: new Date("2024-01-01"),
     updated_at: new Date("2024-01-02"),
   };
 
-  const insertable = repository.testMapToInsertable(entity);
+  const insertable = mapper.toInsertable(entity);
 
   // Verify all fields are mapped (except id which is auto-generated)
   assertEquals(insertable.name, "Test Item");
@@ -163,35 +118,22 @@ Deno.test("mapToInsertable maps all entity fields", () => {
   assertEquals(insertable.code, "ITEM-001");
   assertEquals(insertable.description, "Test description");
   assertEquals(insertable.notes, "Test notes");
-  assertEquals(insertable.model_id, 10);
-  assertEquals(insertable.model_type, "model");
-  assertEquals(insertable.parent_id, 20);
-  assertEquals(insertable.parent_type, "parent");
   assertEquals(insertable.space_id, 1);
-  assertEquals(insertable.space_type, "space");
-  assertEquals(insertable.type_id, 30);
-  assertEquals(insertable.type_type, "type");
-  assertEquals(insertable.primary_code, "PRIMARY-001");
-  assertExists(insertable.created_at);
-  assertExists(insertable.updated_at);
 });
 
-Deno.test("mapToUpdateable maps only provided fields", () => {
+Deno.test("ItemMapper.toUpdateable maps only provided fields", () => {
   const partialEntity: Partial<ItemEntity> = {
     name: "Updated Name",
     price: "20.00",
     description: "Updated description",
   };
 
-  const updateable = repository.testMapToUpdateable(partialEntity);
+  const updateable = mapper.toUpdateable(partialEntity);
 
   // Verify provided fields are present
   assertEquals(updateable.name, "Updated Name");
   assertEquals(updateable.price, "20.00");
   assertEquals(updateable.description, "Updated description");
-
-  // Note: mapToUpdateable includes all fields (even undefined ones)
-  // This is acceptable for Kysely's updateable type
 });
 
 // **Feature: item-module-testing, Property 2: Entity Mapping Round-Trip Consistency**
@@ -200,11 +142,11 @@ Deno.test("Property: Entity mapping round-trip preserves essential fields", () =
   fc.assert(
     fc.property(itemEntityArb, (item) => {
       // Map entity to insertable (simulating database insert)
-      const insertable = repository.testMapToInsertable(item);
+      const insertable = mapper.toInsertable(item);
 
       // Create a database row by simulating what the DB would return
       // The database would add the id and convert undefined to null
-      const dbRow: Partial<Selectable<ItemDatabase>> = {
+      const dbRow = {
         id: item.id,
         name: insertable.name,
         cost: insertable.cost,
@@ -215,22 +157,14 @@ Deno.test("Property: Entity mapping round-trip preserves essential fields", () =
         description: insertable.description ?? null,
         sku: insertable.sku ?? null,
         notes: insertable.notes ?? null,
-        model_id: insertable.model_id ?? null,
-        model_type: insertable.model_type ?? null,
-        parent_id: insertable.parent_id ?? null,
-        parent_type: insertable.parent_type ?? null,
         space_id: insertable.space_id ?? null,
-        space_type: insertable.space_type ?? null,
-        type_id: insertable.type_id ?? null,
-        type_type: insertable.type_type ?? null,
-        primary_code: insertable.primary_code ?? null,
         created_at: insertable.created_at ?? null,
         updated_at: insertable.updated_at ?? null,
         deleted_at: insertable.deleted_at ?? null,
       };
 
       // Map back to entity
-      const roundTrippedEntity = repository.testMapToEntity(dbRow);
+      const roundTrippedEntity = mapper.toEntity(dbRow);
 
       // Verify essential fields are preserved
       return (
@@ -256,7 +190,7 @@ Deno.test("Property: Partial update mapping includes only provided fields", () =
   fc.assert(
     fc.property(partialItemArb, (partialItem) => {
       // Map partial entity to updateable
-      const updateable = repository.testMapToUpdateable(partialItem);
+      const updateable = mapper.toUpdateable(partialItem);
 
       // Get the keys that were provided in the partial item (non-undefined values)
       const providedKeys = Object.keys(partialItem).filter(
@@ -281,19 +215,20 @@ Deno.test("Property: Numeric string fields remain parseable after mapping", () =
   fc.assert(
     fc.property(itemEntityArb, (item) => {
       // Map entity to insertable and back to entity (round-trip)
-      const insertable = repository.testMapToInsertable(item);
+      const insertable = mapper.toInsertable(item);
 
       // Simulate database row
-      const dbRow: Partial<Selectable<ItemDatabase>> = {
+      const dbRow = {
         id: item.id,
         name: insertable.name,
         cost: insertable.cost,
         price: insertable.price,
         weight: insertable.weight,
         status: insertable.status,
+        space_id: insertable.space_id,
       };
 
-      const roundTrippedEntity = repository.testMapToEntity(dbRow);
+      const roundTrippedEntity = mapper.toEntity(dbRow);
 
       // Verify numeric string fields are parseable and maintain their numeric value
       const originalCost = parseFloat(item.cost);
@@ -328,7 +263,8 @@ Deno.test("Property: Numeric string fields remain parseable after mapping", () =
 
 // Get database connection for integration tests
 const db = getDatabase();
-const crudRepository = new ItemRepository(db);
+const crudMapper = new ItemMapper();
+const crudRepository = new ItemRepository(db, crudMapper);
 
 // Helper to create a test item in the database
 async function createTestItem(
@@ -672,55 +608,49 @@ Deno.test({
   sanitizeResources: false,
   sanitizeOps: false,
   async fn() {
-    const createdIds: number[] = [];
+    // Create a test item with active status
+    const item = await createTestItem({
+      name: "Soft Delete Test Item",
+      status: "active",
+    });
 
-    try {
-      // Create a test item with active status
-      const item = await createTestItem({
-        name: "Soft Delete Test Item",
-        status: "active",
-      });
-      createdIds.push(item.id);
+    // Verify item can be retrieved by ID before deletion
+    const itemBeforeDelete = await crudRepository.getOne(item.id);
+    assertEquals(
+      itemBeforeDelete.id,
+      item.id,
+      "Item should be retrievable by ID before deletion",
+    );
+    assertEquals(
+      itemBeforeDelete.status,
+      "active",
+      "Item should have active status before deletion",
+    );
 
-      // Verify item is in active results before deletion
-      const beforeDeleteResult = await crudRepository.getMany({
-        spaceId: 1,
-        type: "full",
-        status: "active",
-        limit: 1000,
-      });
+    // Delete the item
+    await crudRepository.delete(item.id);
 
-      const itemBeforeDelete = beforeDeleteResult.data.find((i) =>
-        i.id === item.id
-      );
-      assertEquals(
-        itemBeforeDelete !== undefined,
-        true,
-        "Item should exist in active results before deletion",
-      );
+    // Query for archived items after deletion
+    const afterDeleteResult = await crudRepository.getMany({
+      spaceId: 1,
+      type: "full",
+      status: "archived",
+      limit: 1000,
+    });
 
-      // Delete the item
-      await crudRepository.delete(item.id);
-
-      // Query for active items after deletion
-      const afterDeleteResult = await crudRepository.getMany({
-        spaceId: 1,
-        type: "full",
-        status: "active",
-        limit: 1000,
-      });
-
-      // Property: The deleted item should NOT appear in active results
-      const itemAfterDelete = afterDeleteResult.data.find((i) =>
-        i.id === item.id
-      );
-      assertEquals(
-        itemAfterDelete,
-        undefined,
-        "Deleted item should not appear in active results",
-      );
-    } finally {
-      // Cleanup is already done by the delete operation
-    }
+    // Property: The deleted item should appear in archived results
+    const itemAfterDelete = afterDeleteResult.data.find((i) =>
+      i.id === item.id
+    );
+    assertEquals(
+      itemAfterDelete !== undefined,
+      true,
+      "Deleted item should appear in archived results",
+    );
+    assertEquals(
+      itemAfterDelete?.status,
+      "archived",
+      "Deleted item should have archived status",
+    );
   },
 });

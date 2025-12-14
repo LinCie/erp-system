@@ -1,7 +1,9 @@
 import { z } from "@hono/zod-openapi";
 import { createItemBodySchema } from "./create-item-body.validator.ts";
 
-const updateItemBodySchema = createItemBodySchema.partial().openapi(
+const updateItemBodySchema = createItemBodySchema.partial().omit({
+  space_id: true,
+}).openapi(
   "UpdateItemBody",
 );
 
