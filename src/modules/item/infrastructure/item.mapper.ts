@@ -5,6 +5,13 @@ import type { ItemEntity } from "../domain/item.entity.ts";
 import { z } from "@hono/zod-openapi";
 
 class ItemMapper {
+  private itemImageSchema = z.object({
+    name: z.string(),
+    path: z.string(),
+    size: z.coerce.number(),
+    isNew: z.boolean().optional(),
+  });
+
   private entitySchema = z.object({
     id: z.number(),
     name: z.string(),
@@ -16,6 +23,7 @@ class ItemMapper {
     weight: z.string(),
     notes: z.string().optional(),
     status: z.enum(["active", "inactive", "archived"]),
+    images: z.array(this.itemImageSchema).optional(),
     space_id: z.number(),
     created_at: z.coerce.date().optional(),
     updated_at: z.coerce.date().optional(),
@@ -32,6 +40,7 @@ class ItemMapper {
     weight: z.string(),
     notes: z.string().nullable(),
     status: z.enum(["active", "inactive", "archived"]),
+    images: z.string().nullable(),
     space_id: z.number(),
   });
 
@@ -58,6 +67,7 @@ class ItemMapper {
       description: entity.description ?? null,
       sku: entity.sku ?? null,
       notes: entity.notes ?? null,
+      images: entity.images ? JSON.stringify(entity.images) : null,
       created_at: entity.created_at ?? null,
       updated_at: entity.updated_at ?? null,
       deleted_at: entity.deleted_at ?? null,
@@ -72,7 +82,12 @@ class ItemMapper {
    * @returns An updateable object
    */
   toUpdateable(entity: Partial<ItemEntity>): Updateable<Items> {
-    return this.updateableSchema.parse(entity);
+    const { images, ...rest } = entity;
+    const data = {
+      ...rest,
+      images: images ? JSON.stringify(images) : undefined,
+    };
+    return this.updateableSchema.parse(data);
   }
 
   /**
@@ -94,6 +109,7 @@ class ItemMapper {
       description: row.description ?? undefined,
       sku: row.sku ?? undefined,
       notes: row.notes ?? undefined,
+      images: row.images ?? undefined,
       created_at: row.created_at ?? undefined,
       updated_at: row.updated_at ?? undefined,
       deleted_at: row.deleted_at ?? undefined,

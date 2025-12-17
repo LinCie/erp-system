@@ -75,15 +75,16 @@ class ItemRepository implements IItemRepository {
       case "partial":
         query = query.select([
           "id",
-          "sku",
+          "space_id",
           "name",
+          "description",
+          "sku",
           "price",
           "cost",
           "status",
-          "description",
           "weight",
           "notes",
-          "space_id",
+          "images",
         ]);
         break;
     }
@@ -119,15 +120,16 @@ class ItemRepository implements IItemRepository {
       .where("id", "=", id)
       .select([
         "id",
-        "sku",
+        "space_id",
         "name",
+        "description",
+        "sku",
         "price",
         "cost",
         "status",
-        "description",
         "weight",
         "notes",
-        "space_id",
+        "images",
       ])
       .executeTakeFirst();
 

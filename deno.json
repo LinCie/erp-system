@@ -1,6 +1,7 @@
 {
   "imports": {
     "@/": "./src/",
+    "@aws-sdk/client-s3": "npm:@aws-sdk/client-s3@^3.948.0",
     "@google/genai": "npm:@google/genai@^1.31.0",
     "@hono/swagger-ui": "npm:@hono/swagger-ui@^0.5.1",
     "@hono/zod-openapi": "npm:@hono/zod-openapi@^1.1.5",
@@ -16,6 +17,7 @@
     "kysely": "npm:kysely@^0.28.8",
     "mysql2": "npm:mysql2",
     "redis": "npm:redis@^5.10.0",
+    "sharp": "npm:sharp@^0.34.2",
     "zod": "npm:zod@^4.1.13"
   },
   "tasks": {
@@ -32,5 +34,5 @@
     "strict": true
   },
   "nodeModulesDir": "auto",
-  "allowScripts": true
+  "allowScripts": ["npm:sharp"]
 }

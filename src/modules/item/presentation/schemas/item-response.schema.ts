@@ -1,6 +1,14 @@
 import { z } from "@hono/zod-openapi";
 import { getManyMetadataSchema } from "@/shared/presentation/schemas/get-many-metadata.schema.ts";
 
+const itemImageSchema = z
+  .object({
+    name: z.string().openapi({ example: "product.jpg" }),
+    path: z.string().openapi({ example: "items/1234567890-product.jpg" }),
+    size: z.number().openapi({ example: 102400 }),
+  })
+  .openapi("ItemImage");
+
 const itemResponseSchema = z
   .object({
     id: z.number().openapi({ example: 1 }),
@@ -17,6 +25,13 @@ const itemResponseSchema = z
       example: "Additional notes",
     }),
     status: z.string().openapi({ example: "active" }),
+    images: z.array(itemImageSchema).optional().openapi({
+      example: [{
+        name: "product.jpg",
+        path: "items/1234567890-product.jpg",
+        size: 102400,
+      }],
+    }),
   })
   .openapi("ItemResponse");
 
