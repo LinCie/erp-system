@@ -1,6 +1,8 @@
+import type { StatusType } from "./types/status.type.ts";
+
 interface BaseEntity {
   id: number;
-  status: string;
+  status: StatusType;
   created_at?: Date;
   updated_at?: Date;
   deleted_at?: Date;

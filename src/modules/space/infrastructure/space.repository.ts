@@ -1,12 +1,17 @@
+import type { SpaceEntity as Space } from "../domain/space.entity.ts";
+
 import { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
 import {
   GetManySpacesProps,
   ISpaceRepository,
 } from "../application/space-repository.interface.ts";
-import { SpaceEntity as Space } from "../domain/space.entity.ts";
+import { SpaceMapper } from "./space.mapper.ts";
 
 class SpaceRepository implements ISpaceRepository {
-  constructor(private readonly db: PersistenceType) {}
+  constructor(
+    private readonly db: PersistenceType,
+    private readonly mapper: SpaceMapper,
+  ) {}
 
   async getMany(props: GetManySpacesProps) {
     const {
@@ -87,7 +92,7 @@ class SpaceRepository implements ISpaceRepository {
     const result = await query.execute();
 
     return {
-      data: result as Space[],
+      data: result.map((row) => this.mapper.toEntity(row)),
       metadata: {
         totalItems,
         totalPages,
@@ -105,18 +110,19 @@ class SpaceRepository implements ISpaceRepository {
       .executeTakeFirst();
 
     if (!result) {
-      throw new Error("Space not found");
+      throw new Error("SPACE_NOT_FOUND");
     }
 
-    return result as Space;
+    return this.mapper.toEntity(result);
   }
 
   async create(data: Omit<Space, "id">) {
+    const insertable = this.mapper.toInsertable(data);
+
     const created = await this.db
       .insertInto("spaces")
       .values({
-        ...data,
-        address: JSON.stringify(data.address),
+        ...insertable,
         created_at: new Date(),
         updated_at: new Date(),
       })
@@ -130,11 +136,12 @@ class SpaceRepository implements ISpaceRepository {
   }
 
   async update(id: number, data: Partial<Space>) {
+    const updateable = this.mapper.toUpdateable(data);
+
     await this.db
       .updateTable("spaces")
       .set({
-        ...data,
-        address: JSON.stringify(data.address),
+        ...updateable,
         updated_at: new Date(),
       })
       .where("id", "=", id)

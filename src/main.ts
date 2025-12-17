@@ -4,10 +4,16 @@ import { swaggerUI } from "@hono/swagger-ui";
 import { itemController } from "./modules/item/presentation/item.module.ts";
 import { createAuthModule } from "./modules/auth/presentation/auth.module.ts";
 import { spaceController } from "./modules/space/presentation/space.module.ts";
+import {
+  errorHandler,
+  notFoundHandler,
+} from "./shared/presentation/middlewares/index.ts";
 
 async function main() {
   const app = new OpenAPIHono();
 
+  app.onError(errorHandler);
+  app.notFound(notFoundHandler);
   app.use(logger());
 
   const { authController } = await createAuthModule();

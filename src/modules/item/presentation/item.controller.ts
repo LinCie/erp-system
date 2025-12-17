@@ -57,7 +57,6 @@ function defineItemController(service: ItemService, aiService: ItemAiService) {
   app.openapi(updateItemRoute, async (c) => {
     const { id } = c.req.valid("param");
     const contentType = c.req.header("content-type") ?? "";
-    console.log(contentType);
 
     let data: UpdateItemData;
 

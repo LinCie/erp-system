@@ -134,7 +134,7 @@ class ItemRepository implements IItemRepository {
       .executeTakeFirst();
 
     if (!item) {
-      throw new Error("Item not found");
+      throw new Error("ITEM_NOT_FOUND");
     }
 
     return this.mapper.toEntity(item);

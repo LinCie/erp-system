@@ -5,6 +5,7 @@ import type {
 import type { UserEntity } from "../domain/user.entity.ts";
 import type { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
 import type { RedisClientType } from "redis";
+import type { StatusType } from "@/shared/domain/types/status.type.ts";
 
 const REDIS_REFRESH_TOKEN_PREFIX = "refresh_token";
 const REFRESH_TOKEN_EXPIRES_IN_SECONDS = 7 * 24 * 60 * 60; // 7 days
@@ -87,7 +88,7 @@ class AuthRepository implements IAuthRepository {
       name: user.name,
       email: user.email,
       password: user.password,
-      status: user.status,
+      status: user.status as StatusType,
       created_at: user.created_at ?? undefined,
       updated_at: user.updated_at ?? undefined,
       deleted_at: user.deleted_at ?? undefined,
@@ -114,7 +115,7 @@ class AuthRepository implements IAuthRepository {
       name: user.name,
       email: user.email,
       password: user.password,
-      status: user.status,
+      status: user.status as StatusType,
       created_at: user.created_at ?? undefined,
       updated_at: user.updated_at ?? undefined,
       deleted_at: user.deleted_at ?? undefined,
