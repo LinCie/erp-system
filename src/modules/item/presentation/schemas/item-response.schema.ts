@@ -6,6 +6,7 @@ const itemImageSchema = z
     name: z.string().openapi({ example: "product.jpg" }),
     path: z.string().openapi({ example: "items/1234567890-product.jpg" }),
     size: z.number().openapi({ example: 102400 }),
+    isNew: z.boolean().optional().openapi({ example: true }),
   })
   .openapi("ItemImage");
 
@@ -30,6 +31,7 @@ const itemResponseSchema = z
         name: "product.jpg",
         path: "items/1234567890-product.jpg",
         size: 102400,
+        isNew: true,
       }],
     }),
   })
@@ -40,4 +42,15 @@ const GetManyItemsResponseSchema = z.object({
   metadata: getManyMetadataSchema,
 });
 
-export { GetManyItemsResponseSchema, itemResponseSchema };
+const requestUploadResponseSchema = z.object({
+  url: z.string().openapi({ example: "https://upload.example.com" }),
+  key: z.string().openapi({ example: "items/1234567890-product.jpg" }),
+}).openapi(
+  "RequestUploadResponse",
+);
+
+export {
+  GetManyItemsResponseSchema,
+  itemResponseSchema,
+  requestUploadResponseSchema,
+};

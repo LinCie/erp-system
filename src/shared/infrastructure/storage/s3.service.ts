@@ -1,23 +1,10 @@
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type {
+  ImageUploadRequestProps,
   IStorageService,
-  UploadResult,
 } from "@/shared/application/storage.interface.ts";
 import { getS3Client } from "./s3.storage.ts";
-import { processImage } from "./image.processor.ts";
-
-const IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "image/avif",
-  "image/tiff",
-  "image/bmp",
-  "image/svg+xml",
-  "image/heic",
-  "image/heif",
-];
 
 class S3StorageService implements IStorageService {
   private bucket: string;
@@ -28,44 +15,26 @@ class S3StorageService implements IStorageService {
     this.bucket = bucket;
   }
 
-  async upload(file: File, folder: string): Promise<UploadResult> {
-    const client = getS3Client();
+  async requestImageUpload(
+    { contentType, size }: ImageUploadRequestProps,
+  ) {
+    if (size > 10 * 1024 * 1024) throw new Error("File too large");
+    if (!contentType.startsWith("image/")) throw new Error("Invalid type");
+
     const timestamp = Date.now();
-    const baseName = file.name.replace(/\.[^/.]+$/, "").replace(
-      /[^a-zA-Z0-9.-]/g,
-      "_",
-    );
+    const key = `images/${timestamp}-${crypto.randomUUID()}`;
 
-    let body: Uint8Array;
-    let contentType: string;
-    let key: string;
-    let size: number;
-
-    if (IMAGE_TYPES.includes(file.type)) {
-      const processed = await processImage(file);
-      body = processed.buffer;
-      contentType = "image/webp";
-      key = `${folder}/${timestamp}-${baseName}.webp`;
-      size = processed.size;
-    } else {
-      const arrayBuffer = await file.arrayBuffer();
-      body = new Uint8Array(arrayBuffer);
-      contentType = file.type;
-      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-      key = `${folder}/${timestamp}-${sanitizedName}`;
-      size = file.size;
-    }
+    const client = getS3Client();
 
     const command = new PutObjectCommand({
       Bucket: this.bucket,
       Key: key,
-      Body: body,
       ContentType: contentType,
     });
 
-    await client.send(command);
+    const url = await getSignedUrl(client, command, { expiresIn: 60 });
 
-    return { key, size };
+    return { url, key };
   }
 
   async delete(key: string): Promise<void> {

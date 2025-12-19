@@ -2,11 +2,7 @@ import type { JwtVariables } from "hono/jwt";
 
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { jwt } from "hono/jwt";
-import {
-  CreateItemData,
-  ItemService,
-  UpdateItemData,
-} from "../application/item.service.ts";
+import { ItemService } from "../application/item.service.ts";
 import { ItemAiService } from "../infrastructure/item.ai-service.ts";
 import { getManyItemsRoute } from "./routes/get-many-items.route.ts";
 import { getOneItemRoute } from "./routes/get-one-item.route.ts";
@@ -14,8 +10,7 @@ import { createItemRoute } from "./routes/create-item.route.ts";
 import { updateItemRoute } from "./routes/update-item.route.ts";
 import { deleteItemRoute } from "./routes/delete-item.route.ts";
 import { itemChatRoute } from "./routes/item-chat.route.ts";
-import { createItemFormSchema } from "./validators/create-item-body.validator.ts";
-import { updateItemFormSchema } from "./validators/update-item-body.validator.ts";
+import { requestUploadRoute } from "./routes/request-upload.route.ts";
 
 function defineItemController(service: ItemService, aiService: ItemAiService) {
   const app = new OpenAPIHono<{ Variables: JwtVariables }>();
@@ -38,36 +33,14 @@ function defineItemController(service: ItemService, aiService: ItemAiService) {
   });
 
   app.openapi(createItemRoute, async (c) => {
-    const contentType = c.req.header("content-type") ?? "";
-
-    let data: CreateItemData;
-
-    if (contentType.includes("multipart/form-data")) {
-      const formData = await c.req.parseBody({ all: true });
-      const parsed = createItemFormSchema.parse(formData);
-      data = parsed;
-    } else {
-      data = c.req.valid("json");
-    }
-
+    const data = c.req.valid("json");
     const result = await service.create(data);
     return c.json(result, 201);
   });
 
   app.openapi(updateItemRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const contentType = c.req.header("content-type") ?? "";
-
-    let data: UpdateItemData;
-
-    if (contentType.includes("multipart/form-data")) {
-      const formData = await c.req.parseBody({ all: true });
-      const parsed = updateItemFormSchema.parse(formData);
-      data = parsed;
-    } else {
-      data = c.req.valid("json");
-    }
-
+    const data = c.req.valid("json");
     const result = await service.update(id, data);
     return c.json(result, 200);
   });
@@ -82,6 +55,12 @@ function defineItemController(service: ItemService, aiService: ItemAiService) {
     const body = c.req.valid("json");
     const response = await aiService.generate(1, body.prompt);
     return c.json({ response }, 200);
+  });
+
+  app.openapi(requestUploadRoute, async (c) => {
+    const body = c.req.valid("json");
+    const result = await service.requestUpload(body);
+    return c.json(result, 200);
   });
 
   return app;

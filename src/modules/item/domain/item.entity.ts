@@ -1,9 +1,7 @@
-import { BaseEntity } from "@/shared/domain/base.entity.ts";
+import type { BaseEntity } from "@/shared/domain/base.entity.ts";
+import type { FileType } from "@/shared/domain/types/file.type.ts";
 
-interface ItemImage {
-  name: string;
-  path: string;
-  size: number;
+interface ItemImage extends FileType {
   isNew?: boolean;
 }
 

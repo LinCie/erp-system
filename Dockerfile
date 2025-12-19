@@ -1,10 +1,5 @@
 FROM denoland/deno:latest
 
-# Install Sharp native dependencies
-RUN apt-get update && apt-get install -y \
-    libvips-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
 COPY deno.json deno.lock ./

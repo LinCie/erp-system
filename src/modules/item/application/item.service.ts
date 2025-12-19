@@ -1,18 +1,10 @@
 import type { IStorageService } from "@/shared/application/storage.interface.ts";
+import type { ImageUploadRequestProps } from "@/shared/application/storage.interface.ts";
 import {
   GetManyItemsProps,
   IItemRepository,
 } from "./item-repository.interface.ts";
-import { ItemEntity as Item, ItemImage } from "../domain/item.entity.ts";
-
-type CreateItemData = Omit<Item, "id" | "images"> & {
-  images?: File | File[];
-};
-
-type UpdateItemData = Partial<Omit<Item, "images">> & {
-  images?: File | File[];
-  existing_images?: ItemImage[];
-};
+import { ItemEntity as Item } from "../domain/item.entity.ts";
 
 class ItemService {
   constructor(
@@ -28,73 +20,36 @@ class ItemService {
     return await this.itemRepository.getOne(id);
   }
 
-  async create(data: CreateItemData) {
-    const { images: imageFiles, ...itemData } = data;
-
-    let images: ItemImage[] | undefined;
-
-    if (imageFiles) {
-      const files = Array.isArray(imageFiles) ? imageFiles : [imageFiles];
-      images = await Promise.all(
-        files.map(async (file) => {
-          const result = await this.storageService.upload(file, "items");
-          return {
-            name: file.name,
-            path: result.key,
-            size: result.size,
-            isNew: true,
-          };
+  async create(data: Omit<Item, "id">) {
+    if (data.images) {
+      await Promise.all(
+        data.images.map((image) => {
+          return { ...image, isNew: true };
         }),
       );
     }
 
-    return await this.itemRepository.create({ ...itemData, images });
+    return await this.itemRepository.create(data);
   }
 
-  async update(id: number, data: UpdateItemData) {
-    const { images: imageFiles, existing_images, ...itemData } = data;
+  async update(id: number, data: Partial<Omit<Item, "id">>) {
+    const item = await this.getOne(id);
 
-    const existingItem = await this.itemRepository.getOne(id);
-    let images: ItemImage[] | undefined;
-
-    // Handle existing images (keep only specified ones, delete the rest)
-    if (existing_images !== undefined) {
-      const existingPaths = new Set(existing_images.map((img) => img.path));
-      const imagesToRemove = (existingItem.images ?? []).filter(
-        (img) => !existingPaths.has(img.path),
+    // Only process image deletions if images field is explicitly provided
+    if (data.images !== undefined) {
+      const newImagePaths = new Set(data.images?.map((i) => i.path) ?? []);
+      const imagesToDelete = item.images?.filter(
+        (image) => !newImagePaths.has(image.path),
       );
 
-      // Only delete from S3 if isNew is true (uploaded images)
-      const imagesToDeleteFromS3 = imagesToRemove.filter((img) => img.isNew);
-      await Promise.all(
-        imagesToDeleteFromS3.map((img) => this.storageService.delete(img.path)),
-      );
-
-      images = existing_images;
-    } else {
-      images = existingItem.images;
+      if (imagesToDelete && imagesToDelete.length > 0) {
+        await Promise.all(
+          imagesToDelete.map((image) => this.storageService.delete(image.path)),
+        );
+      }
     }
 
-    // Handle new image uploads
-    if (imageFiles) {
-      const files = Array.isArray(imageFiles) ? imageFiles : [imageFiles];
-
-      const newImages = await Promise.all(
-        files.map(async (file) => {
-          const result = await this.storageService.upload(file, "items");
-          return {
-            name: file.name,
-            path: result.key,
-            size: result.size,
-            isNew: true,
-          };
-        }),
-      );
-
-      images = [...(images ?? []), ...newImages];
-    }
-
-    return await this.itemRepository.update(id, { ...itemData, images });
+    return await this.itemRepository.update(id, data);
   }
 
   async delete(id: number) {
@@ -108,7 +63,13 @@ class ItemService {
 
     return await this.itemRepository.delete(id);
   }
+
+  async requestUpload({ contentType, size }: ImageUploadRequestProps) {
+    return await this.storageService.requestImageUpload({
+      contentType,
+      size,
+    });
+  }
 }
 
 export { ItemService };
-export type { CreateItemData, UpdateItemData };

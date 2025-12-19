@@ -2,7 +2,6 @@ import { createRoute } from "@hono/zod-openapi";
 import { itemIdParamSchema } from "../validators/item-id-param.validator.ts";
 import {
   updateItemBodySchema,
-  updateItemFormSchema,
 } from "../validators/update-item-body.validator.ts";
 import { itemResponseSchema } from "../schemas/item-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
@@ -18,7 +17,6 @@ const updateItemRoute = createRoute({
     body: {
       content: {
         "application/json": { schema: updateItemBodySchema },
-        "multipart/form-data": { schema: updateItemFormSchema },
       },
     },
   },
