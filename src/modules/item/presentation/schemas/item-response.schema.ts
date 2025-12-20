@@ -21,6 +21,7 @@ const itemResponseSchema = z
     sku: z.string().optional().openapi({ example: "SKU-001" }),
     cost: z.string().openapi({ example: "10000" }),
     price: z.string().openapi({ example: "15000" }),
+    price_discount: z.string().optional().openapi({ example: "5000" }),
     weight: z.string().openapi({ example: "1.5" }),
     notes: z.string().optional().openapi({
       example: "Additional notes",

@@ -143,3 +143,4 @@ vite.config.ts.timestamp-*
 laravel
 
 cov_profile
+.dump

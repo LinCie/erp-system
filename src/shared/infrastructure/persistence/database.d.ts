@@ -149,7 +149,6 @@ export interface Inventories {
 }
 
 export interface Items {
-  attributes: Json | null;
   code: string | null;
   cost: Generated<Decimal>;
   created_at: Date | null;
@@ -164,10 +163,10 @@ export interface Items {
   model_type: string | null;
   name: string;
   notes: string | null;
-  options: Json | null;
   parent_id: number | null;
   parent_type: string | null;
   price: Generated<Decimal>;
+  price_discount: Generated<Decimal | null>;
   primary_code: string | null;
   sku: string | null;
   space_id: number | null;
@@ -177,7 +176,6 @@ export interface Items {
   type_id: number | null;
   type_type: string | null;
   updated_at: Date | null;
-  variants: Json | null;
   weight: Generated<Decimal>;
 }
 
@@ -254,13 +252,10 @@ export interface PersonalAccessTokens {
 
 export interface Persons {
   address: Json | null;
-  address_detail: string | null;
   birth_date: Date | null;
-  country: string | null;
   created_at: Date | null;
   death_date: Date | null;
   deleted_at: Date | null;
-  district: string | null;
   email: string | null;
   full_name: string | null;
   gender: string | null;
@@ -270,13 +265,8 @@ export interface Persons {
   notes: string | null;
   number: string | null;
   phone_number: string | null;
-  postal_code: string | null;
-  province: string | null;
-  regency: string | null;
   status: Generated<string>;
-  sub_district: string | null;
   updated_at: Date | null;
-  village: string | null;
 }
 
 export interface Players {
@@ -393,6 +383,7 @@ export interface Spaces {
 }
 
 export interface TransactionDetails {
+  code: string | null;
   cost_per_unit: Generated<Decimal>;
   created_at: Date | null;
   credit: Generated<Decimal>;
@@ -401,7 +392,7 @@ export interface TransactionDetails {
   deleted_at: Date | null;
   detail_id: number | null;
   detail_type: string | null;
-  discount: Generated<Decimal>;
+  discount: Generated<Decimal | null>;
   id: Generated<number>;
   model_id: number | null;
   model_type: string | null;
@@ -412,8 +403,7 @@ export interface TransactionDetails {
   sku: string | null;
   transaction_id: number;
   updated_at: Date | null;
-  volume: Generated<Decimal>;
-  weight: Generated<Decimal>;
+  weight: Generated<Decimal | null>;
 }
 
 export interface Transactions {
@@ -459,7 +449,7 @@ export interface Transactions {
   status: Generated<string>;
   tags: Json | null;
   total: Generated<Decimal>;
-  total_details: Generated<Decimal>;
+  total_details: Generated<Decimal | null>;
   type_id: number | null;
   type_type: string | null;
   updated_at: Date | null;
