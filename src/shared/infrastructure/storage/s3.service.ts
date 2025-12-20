@@ -1,7 +1,8 @@
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type {
-  ImageUploadRequestProps,
+  FileUploadRequestProps,
+  FileUploadRequestResult,
   IStorageService,
 } from "@/shared/application/storage.interface.ts";
 import { getS3Client } from "./s3.storage.ts";
@@ -16,13 +17,34 @@ class S3StorageService implements IStorageService {
   }
 
   async requestImageUpload(
-    { contentType, size }: ImageUploadRequestProps,
+    { contentType, size }: FileUploadRequestProps,
   ) {
     if (size > 10 * 1024 * 1024) throw new Error("File too large");
     if (!contentType.startsWith("image/")) throw new Error("Invalid type");
 
     const timestamp = Date.now();
     const key = `images/${timestamp}-${crypto.randomUUID()}`;
+
+    const client = getS3Client();
+
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      ContentType: contentType,
+    });
+
+    const url = await getSignedUrl(client, command, { expiresIn: 60 });
+
+    return { url, key };
+  }
+
+  async requestFileUpload(
+    { contentType, size }: FileUploadRequestProps,
+  ): Promise<FileUploadRequestResult> {
+    if (size > 50 * 1024 * 1024) throw new Error("File too large");
+
+    const timestamp = Date.now();
+    const key = `files/${timestamp}-${crypto.randomUUID()}`;
 
     const client = getS3Client();
 

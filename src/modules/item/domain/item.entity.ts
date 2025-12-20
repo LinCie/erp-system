@@ -11,6 +11,7 @@ interface ItemEntity extends BaseEntity {
   price: string;
   weight: string;
   space_id: number;
+  files?: FileType[];
   price_discount?: string;
   images?: ItemImage[];
   code?: string;

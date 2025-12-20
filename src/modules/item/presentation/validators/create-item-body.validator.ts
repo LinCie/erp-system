@@ -21,6 +21,11 @@ const createItemBodySchema = z
       size: z.number().openapi({ example: 1024 }),
       isNew: z.boolean().optional().openapi({ example: true }),
     })).optional().openapi("Images"),
+    files: z.array(z.object({
+      name: z.string().openapi({ example: "product.pdf" }),
+      path: z.string().openapi({ example: "/items/product.pdf" }),
+      size: z.number().openapi({ example: 1024 }),
+    })).optional().openapi("Files"),
     status: z.enum(["active", "inactive"]).openapi({ example: "active" }),
     space_id: z.coerce.number().openapi({ example: 1 }),
   })

@@ -12,6 +12,12 @@ class ItemMapper {
     isNew: z.boolean().optional(),
   });
 
+  private fileSchema = z.object({
+    name: z.string(),
+    path: z.string(),
+    size: z.coerce.number(),
+  });
+
   private entitySchema = z.object({
     id: z.number(),
     name: z.string(),
@@ -21,6 +27,7 @@ class ItemMapper {
     cost: z.string(),
     price: z.string(),
     price_discount: z.string().optional(),
+    files: z.array(this.fileSchema).optional(),
     weight: z.string(),
     notes: z.string().optional(),
     status: z.enum(["active", "inactive", "archived"]),
@@ -38,9 +45,10 @@ class ItemMapper {
     sku: z.string().nullable(),
     cost: z.string(),
     price: z.string(),
-    price_discount: z.string().optional(),
+    price_discount: z.string().nullable(),
     weight: z.string(),
     notes: z.string().nullable(),
+    files: z.string().nullable(),
     status: z.enum(["active", "inactive", "archived"]),
     images: z.string().nullable(),
     space_id: z.number(),
@@ -71,6 +79,7 @@ class ItemMapper {
       sku: entity.sku ?? null,
       notes: entity.notes ?? null,
       images: entity.images ? JSON.stringify(entity.images) : null,
+      files: entity.files ? JSON.stringify(entity.files) : null,
       created_at: entity.created_at ?? null,
       updated_at: entity.updated_at ?? null,
       deleted_at: entity.deleted_at ?? null,
@@ -85,10 +94,11 @@ class ItemMapper {
    * @returns An updateable object
    */
   toUpdateable(entity: Partial<ItemEntity>): Updateable<Items> {
-    const { images, ...rest } = entity;
+    const { images, files, ...rest } = entity;
     const data = {
       ...rest,
       images: images ? JSON.stringify(images) : undefined,
+      files: files ? JSON.stringify(files) : undefined,
     };
     return this.updateableSchema.parse(data);
   }
@@ -107,6 +117,7 @@ class ItemMapper {
       price: row.price,
       weight: row.weight,
       status: row.status,
+      files: row.files ?? undefined,
       price_discount: row.price_discount ?? undefined,
       space_id: row.space_id ?? undefined,
       code: row.code ?? undefined,

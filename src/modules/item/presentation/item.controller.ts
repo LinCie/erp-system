@@ -1,4 +1,5 @@
 import type { JwtVariables } from "hono/jwt";
+import type { FileUploadRequestResult } from "@/shared/application/storage.interface.ts";
 
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { jwt } from "hono/jwt";
@@ -59,7 +60,14 @@ function defineItemController(service: ItemService, aiService: ItemAiService) {
 
   app.openapi(requestUploadRoute, async (c) => {
     const body = c.req.valid("json");
-    const result = await service.requestUpload(body);
+
+    let result: FileUploadRequestResult;
+    if (body.contentType.startsWith("image/")) {
+      result = await service.requestImageUpload(body);
+    } else {
+      result = await service.requestFileUpload(body);
+    }
+
     return c.json(result, 200);
   });
 

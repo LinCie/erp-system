@@ -1,6 +1,14 @@
 import { z } from "@hono/zod-openapi";
 import { getManyMetadataSchema } from "@/shared/presentation/schemas/get-many-metadata.schema.ts";
 
+const itemFileSchema = z
+  .object({
+    name: z.string().openapi({ example: "product.pdf" }),
+    path: z.string().openapi({ example: "items/1234567890-product.pdf" }),
+    size: z.number().openapi({ example: 102400 }),
+  })
+  .openapi("ItemFile");
+
 const itemImageSchema = z
   .object({
     name: z.string().openapi({ example: "product.jpg" }),
@@ -33,6 +41,13 @@ const itemResponseSchema = z
         path: "items/1234567890-product.jpg",
         size: 102400,
         isNew: true,
+      }],
+    }),
+    files: z.array(itemFileSchema).optional().openapi({
+      example: [{
+        name: "product.pdf",
+        path: "items/1234567890-product.pdf",
+        size: 102400,
       }],
     }),
   })

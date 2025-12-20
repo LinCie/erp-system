@@ -1,5 +1,5 @@
 import type { IStorageService } from "@/shared/application/storage.interface.ts";
-import type { ImageUploadRequestProps } from "@/shared/application/storage.interface.ts";
+import type { FileUploadRequestProps } from "@/shared/application/storage.interface.ts";
 import {
   GetManyItemsProps,
   IItemRepository,
@@ -49,6 +49,20 @@ class ItemService {
       }
     }
 
+    // Only process file deletions if images field is explicitly provided
+    if (data.files !== undefined) {
+      const newFilePaths = new Set(data.files?.map((i) => i.path) ?? []);
+      const filesToDelete = item.files?.filter(
+        (file) => !newFilePaths.has(file.path),
+      );
+
+      if (filesToDelete && filesToDelete.length > 0) {
+        await Promise.all(
+          filesToDelete.map((file) => this.storageService.delete(file.path)),
+        );
+      }
+    }
+
     return await this.itemRepository.update(id, data);
   }
 
@@ -61,10 +75,23 @@ class ItemService {
       );
     }
 
+    if (item.files) {
+      await Promise.all(
+        item.files.map((file) => this.storageService.delete(file.path)),
+      );
+    }
+
     return await this.itemRepository.delete(id);
   }
 
-  async requestUpload({ contentType, size }: ImageUploadRequestProps) {
+  async requestFileUpload({ contentType, size }: FileUploadRequestProps) {
+    return await this.storageService.requestFileUpload({
+      contentType,
+      size,
+    });
+  }
+
+  async requestImageUpload({ contentType, size }: FileUploadRequestProps) {
     return await this.storageService.requestImageUpload({
       contentType,
       size,

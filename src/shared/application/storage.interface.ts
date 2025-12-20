@@ -1,22 +1,25 @@
-interface ImageUploadRequestProps {
+interface FileUploadRequestProps {
   contentType: string;
   size: number;
 }
 
-interface ImageUploadRequestResult {
+interface FileUploadRequestResult {
   key: string;
   url: string;
 }
 
 interface IStorageService {
   requestImageUpload(
-    props: ImageUploadRequestProps,
-  ): Promise<ImageUploadRequestResult>;
+    props: FileUploadRequestProps,
+  ): Promise<FileUploadRequestResult>;
+  requestFileUpload(
+    props: FileUploadRequestProps,
+  ): Promise<FileUploadRequestResult>;
   delete(key: string): Promise<void>;
 }
 
 export type {
-  ImageUploadRequestProps,
-  ImageUploadRequestResult,
+  FileUploadRequestProps,
+  FileUploadRequestResult,
   IStorageService,
 };
