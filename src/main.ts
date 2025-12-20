@@ -1,8 +1,9 @@
 import { logger } from "hono/logger";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
-import { itemController } from "./modules/item/presentation/item.module.ts";
 import { createAuthModule } from "./modules/auth/presentation/auth.module.ts";
+import { inventoryController } from "./modules/inventory/presentation/inventory.module.ts";
+import { itemController } from "./modules/item/presentation/item.module.ts";
 import { spaceController } from "./modules/space/presentation/space.module.ts";
 import {
   errorHandler,
@@ -21,6 +22,7 @@ async function main() {
   app.route("/auth", authController);
   app.route("/items", itemController);
   app.route("/spaces", spaceController);
+  app.route("/inventories", inventoryController);
 
   // OpenAPI JSON spec endpoint
   app.doc("/doc", {
