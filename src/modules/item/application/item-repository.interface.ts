@@ -7,17 +7,23 @@ type GetManyItemsProps = GetManyPropsType & {
   type: "full" | "partial";
   withInventory?: boolean;
 };
+
 type GetManyItemsReturn = {
   data: Item[];
   metadata: GetManyMetadataType;
 };
 
+type GetOneItemProps = {
+  id: number;
+  withInventory?: boolean;
+};
+
 interface IItemRepository {
   getMany(props: GetManyItemsProps): Promise<GetManyItemsReturn>;
-  getOne(id: number): Promise<Item>;
+  getOne(props: GetOneItemProps): Promise<Item>;
   create(item: Omit<Item, "id">): Promise<Item>;
   update(id: number, item: Partial<Item>): Promise<Item>;
   delete(id: number): Promise<void>;
 }
 
-export type { GetManyItemsProps, IItemRepository };
+export type { GetManyItemsProps, GetOneItemProps, IItemRepository };

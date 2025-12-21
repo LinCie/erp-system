@@ -2,6 +2,7 @@ import type { IStorageService } from "@/shared/application/storage.interface.ts"
 import type { FileUploadRequestProps } from "@/shared/application/storage.interface.ts";
 import {
   GetManyItemsProps,
+  GetOneItemProps,
   IItemRepository,
 } from "./item-repository.interface.ts";
 import { ItemEntity as Item } from "../domain/item.entity.ts";
@@ -16,8 +17,8 @@ class ItemService {
     return await this.itemRepository.getMany(props);
   }
 
-  async getOne(id: number) {
-    return await this.itemRepository.getOne(id);
+  async getOne(props: GetOneItemProps) {
+    return await this.itemRepository.getOne(props);
   }
 
   async create(data: Omit<Item, "id">) {
@@ -33,7 +34,7 @@ class ItemService {
   }
 
   async update(id: number, data: Partial<Omit<Item, "id">>) {
-    const item = await this.getOne(id);
+    const item = await this.getOne({ id });
 
     // Only process image deletions if images field is explicitly provided
     if (data.images !== undefined) {
@@ -67,7 +68,7 @@ class ItemService {
   }
 
   async delete(id: number) {
-    const item = await this.itemRepository.getOne(id);
+    const item = await this.itemRepository.getOne({ id });
 
     if (item.images) {
       await Promise.all(

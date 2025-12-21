@@ -1,6 +1,14 @@
 import { z } from "@hono/zod-openapi";
 import { getManyMetadataSchema } from "@/shared/presentation/schemas/get-many-metadata.schema.ts";
 
+const inventoryItemSchema = z.object({
+  balance: z.coerce.number().openapi({ example: 1000 }),
+  cost_per_unit: z.coerce.number().openapi({ example: 100 }),
+  notes: z.string().optional().openapi({ example: "Notes" }),
+  space_name: z.string().openapi({ example: "Space 1" }),
+  status: z.string().openapi({ example: "active" }),
+}).openapi("InventoryItem");
+
 const itemFileSchema = z
   .object({
     name: z.string().openapi({ example: "product.pdf" }),
@@ -48,6 +56,15 @@ const itemResponseSchema = z
         name: "product.pdf",
         path: "items/1234567890-product.pdf",
         size: 102400,
+      }],
+    }),
+    inventories: z.array(inventoryItemSchema).optional().openapi({
+      example: [{
+        balance: 100,
+        cost_per_unit: 100,
+        notes: "",
+        space_name: "",
+        status: "active",
       }],
     }),
   })

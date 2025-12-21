@@ -1,6 +1,7 @@
 // deno-lint-ignore-file require-await
 import type {
   GetManyItemsProps,
+  GetOneItemProps,
   IItemRepository,
 } from "../../application/item-repository.interface.ts";
 import type { ItemEntity } from "../../domain/item.entity.ts";
@@ -127,14 +128,14 @@ class MockItemRepository implements IItemRepository {
     };
   }
 
-  async getOne(id: number): Promise<ItemEntity> {
-    this.calls.push({ method: "getOne", args: [id] });
+  async getOne(props: GetOneItemProps): Promise<ItemEntity> {
+    this.calls.push({ method: "getOne", args: [props] });
 
     if (this.shouldThrow) {
       throw this.shouldThrow;
     }
 
-    const item = this.items.find((item) => item.id === id);
+    const item = this.items.find((item) => item.id === props.id);
     if (!item) {
       throw new Error("Item not found");
     }

@@ -5,6 +5,14 @@ import type { ItemEntity } from "../domain/item.entity.ts";
 import { z } from "@hono/zod-openapi";
 
 class ItemMapper {
+  private inventoryItemSchema = z.object({
+    balance: z.coerce.number(),
+    cost_per_unit: z.coerce.number(),
+    notes: z.string().optional(),
+    space_name: z.string(),
+    status: z.string(),
+  });
+
   private itemImageSchema = z.object({
     name: z.string(),
     path: z.string(),
@@ -33,6 +41,7 @@ class ItemMapper {
     status: z.enum(["active", "inactive", "archived"]),
     images: z.array(this.itemImageSchema).optional(),
     space_id: z.number(),
+    inventories: z.array(this.inventoryItemSchema).optional(),
     created_at: z.coerce.date().optional(),
     updated_at: z.coerce.date().optional(),
     deleted_at: z.coerce.date().optional(),
@@ -110,6 +119,14 @@ class ItemMapper {
    * @returns An item entity
    */
   toEntity(row: Record<string, unknown>): ItemEntity {
+    // Transform inventories: convert null to undefined for optional fields
+    const inventories = Array.isArray(row.inventories)
+      ? row.inventories.map((inv: Record<string, unknown>) => ({
+        ...inv,
+        notes: inv.notes ?? undefined,
+      }))
+      : undefined;
+
     const data = {
       id: row.id,
       name: row.name,
@@ -125,6 +142,7 @@ class ItemMapper {
       sku: row.sku ?? undefined,
       notes: row.notes ?? undefined,
       images: row.images ?? undefined,
+      inventories,
       created_at: row.created_at ?? undefined,
       updated_at: row.updated_at ?? undefined,
       deleted_at: row.deleted_at ?? undefined,

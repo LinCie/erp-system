@@ -1,5 +1,6 @@
 import { createRoute } from "@hono/zod-openapi";
 import { itemIdParamSchema } from "../validators/item-id-param.validator.ts";
+import { getOneItemQuerySchema } from "../validators/get-one-item-query.validator.ts";
 import { itemResponseSchema } from "../schemas/item-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 
@@ -11,6 +12,7 @@ const getOneItemRoute = createRoute({
   security: [{ Bearer: [] }],
   request: {
     params: itemIdParamSchema,
+    query: getOneItemQuerySchema,
   },
   responses: {
     200: {

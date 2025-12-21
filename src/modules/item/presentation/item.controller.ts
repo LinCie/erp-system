@@ -29,7 +29,8 @@ function defineItemController(service: ItemService, aiService: ItemAiService) {
 
   app.openapi(getOneItemRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const result = await service.getOne(id);
+    const query = c.req.valid("query");
+    const result = await service.getOne({ id, ...query });
     return c.json(result, 200);
   });
 

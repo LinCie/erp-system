@@ -5,6 +5,7 @@ import { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
 import { safeBigintToNumber } from "@/utilities/transform.utility.ts";
 import {
   GetManyItemsProps,
+  GetOneItemProps,
   IItemRepository,
 } from "../application/item-repository.interface.ts";
 import { ItemMapper } from "./item.mapper.ts";
@@ -98,7 +99,15 @@ class ItemRepository implements IItemRepository {
         jsonArrayFrom(
           eb
             .selectFrom("inventories")
-            .select(["space_id", "balance", "notes", "status", "cost_per_unit"])
+            .where("inventories.model_type", "=", "SUP")
+            .leftJoin("spaces", "spaces.id", "inventories.space_id")
+            .select([
+              "inventories.balance",
+              "inventories.notes",
+              "inventories.status",
+              "inventories.cost_per_unit",
+              "spaces.name as space_name",
+            ])
             .whereRef("inventories.item_id", "=", "items.id"),
         ).as("inventories"),
       ]);
@@ -117,8 +126,10 @@ class ItemRepository implements IItemRepository {
     };
   }
 
-  async getOne(id: number) {
-    const item = await this.db
+  async getOne(props: GetOneItemProps) {
+    const { id, withInventory = false } = props;
+
+    let query = this.db
       .selectFrom("items")
       .where("id", "=", id)
       .select([
@@ -136,8 +147,28 @@ class ItemRepository implements IItemRepository {
         "weight",
         "notes",
         "images",
-      ])
-      .executeTakeFirst();
+      ]);
+
+    if (withInventory) {
+      query = query.select((eb) => [
+        jsonArrayFrom(
+          eb
+            .selectFrom("inventories")
+            .where("inventories.model_type", "=", "SUP")
+            .leftJoin("spaces", "spaces.id", "inventories.space_id")
+            .select([
+              "inventories.balance",
+              "inventories.notes",
+              "inventories.status",
+              "inventories.cost_per_unit",
+              "spaces.name as space_name",
+            ])
+            .whereRef("inventories.item_id", "=", "items.id"),
+        ).as("inventories"),
+      ]);
+    }
+
+    const item = await query.executeTakeFirst();
 
     if (!item) {
       throw new Error("ITEM_NOT_FOUND");
@@ -162,7 +193,7 @@ class ItemRepository implements IItemRepository {
       throw new Error("Item not created");
     }
 
-    return this.getOne(safeBigintToNumber(created.insertId));
+    return this.getOne({ id: safeBigintToNumber(created.insertId) });
   }
 
   async update(id: number, data: Partial<Item>) {
@@ -181,7 +212,7 @@ class ItemRepository implements IItemRepository {
       throw new Error("Item not updated");
     }
 
-    return this.getOne(id);
+    return this.getOne({ id });
   }
 
   async delete(id: number) {

@@ -7,6 +7,7 @@ const getManyItemsQuerySchema = z
     search: z.string().optional().openapi({ example: "keyword" }),
     limit: z.coerce.number().positive().optional().openapi({ example: 10 }),
     page: z.coerce.number().positive().optional().openapi({ example: 1 }),
+    withInventory: z.coerce.boolean().optional().openapi({ example: true }),
   })
   .openapi("GetManyItemsQuery");
 
