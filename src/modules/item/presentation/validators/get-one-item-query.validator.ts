@@ -6,6 +6,12 @@ const getOneItemQuerySchema = z
       param: { name: "withInventory", in: "query" },
       example: false,
     }),
+    spaceId: z.coerce.number().optional().openapi({
+      param: { name: "spaceId", in: "query" },
+      example: 1,
+      description:
+        "Space ID to filter inventories by space and its children. If not provided, all inventories are returned.",
+    }),
   })
   .openapi("GetOneItemQuery");
 

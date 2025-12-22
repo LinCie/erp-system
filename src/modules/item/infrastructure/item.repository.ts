@@ -16,6 +16,50 @@ class ItemRepository implements IItemRepository {
     private readonly mapper: ItemMapper,
   ) {}
 
+  /**
+   * Get all child space IDs for a given space (recursive)
+   */
+  private async getSpaceAndChildrenIds(spaceId: number): Promise<number[]> {
+    const result: number[] = [spaceId];
+
+    const children = await this.db
+      .selectFrom("spaces")
+      .where("parent_id", "=", spaceId)
+      .where("parent_type", "=", "SPACE")
+      .where("deleted_at", "is", null)
+      .select("id")
+      .execute();
+
+    for (const child of children) {
+      const childIds = await this.getSpaceAndChildrenIds(child.id);
+      result.push(...childIds);
+    }
+
+    return result;
+  }
+
+  /**
+   * Get space and its parent ID
+   */
+  private async getSpaceAndParentIds(spaceId: number): Promise<number[]> {
+    const space = await this.db
+      .selectFrom("spaces")
+      .where("id", "=", spaceId)
+      .select(["id", "parent_id"])
+      .executeTakeFirst();
+
+    if (!space) {
+      return [spaceId];
+    }
+
+    const ids = [spaceId];
+    if (space.parent_id) {
+      ids.push(space.parent_id);
+    }
+
+    return ids;
+  }
+
   async getMany(props: GetManyItemsProps) {
     const {
       spaceId,
@@ -29,15 +73,21 @@ class ItemRepository implements IItemRepository {
       withInventory = true,
     } = props;
 
+    // Get space and parent IDs for item filtering
+    const spaceAndParentIds = await this.getSpaceAndParentIds(spaceId);
+
+    // Get space and all children IDs for inventory filtering
+    const spaceAndChildrenIds = await this.getSpaceAndChildrenIds(spaceId);
+
     let countQuery = this.db
       .selectFrom("items")
-      .where("space_id", "=", spaceId)
+      .where("space_id", "in", spaceAndParentIds)
       .where("status", "=", status)
       .where("deleted_at", "is", null);
 
     let query = this.db
       .selectFrom("items")
-      .where("space_id", "=", spaceId)
+      .where("space_id", "in", spaceAndParentIds)
       .where("status", "=", status)
       .orderBy(sort, order)
       .limit(limit)
@@ -100,6 +150,7 @@ class ItemRepository implements IItemRepository {
           eb
             .selectFrom("inventories")
             .where("inventories.model_type", "=", "SUP")
+            .where("inventories.space_id", "in", spaceAndChildrenIds)
             .leftJoin("spaces", "spaces.id", "inventories.space_id")
             .select([
               "inventories.balance",
@@ -127,7 +178,7 @@ class ItemRepository implements IItemRepository {
   }
 
   async getOne(props: GetOneItemProps) {
-    const { id, withInventory = false } = props;
+    const { id, spaceId, withInventory = false } = props;
 
     let query = this.db
       .selectFrom("items")
@@ -150,22 +201,37 @@ class ItemRepository implements IItemRepository {
       ]);
 
     if (withInventory) {
-      query = query.select((eb) => [
-        jsonArrayFrom(
-          eb
-            .selectFrom("inventories")
-            .where("inventories.model_type", "=", "SUP")
-            .leftJoin("spaces", "spaces.id", "inventories.space_id")
-            .select([
-              "inventories.balance",
-              "inventories.notes",
-              "inventories.status",
-              "inventories.cost_per_unit",
-              "spaces.name as space_name",
-            ])
-            .whereRef("inventories.item_id", "=", "items.id"),
-        ).as("inventories"),
-      ]);
+      // If spaceId is provided, filter inventories by space and its children
+      let spaceAndChildrenIds: number[] | null = null;
+      if (spaceId) {
+        spaceAndChildrenIds = await this.getSpaceAndChildrenIds(spaceId);
+      }
+
+      query = query.select((eb) => {
+        let inventoryQuery = eb
+          .selectFrom("inventories")
+          .where("inventories.model_type", "=", "SUP")
+          .leftJoin("spaces", "spaces.id", "inventories.space_id")
+          .select([
+            "inventories.balance",
+            "inventories.notes",
+            "inventories.status",
+            "inventories.cost_per_unit",
+            "spaces.name as space_name",
+          ])
+          .whereRef("inventories.item_id", "=", "items.id");
+
+        // Filter by space and children if spaceId is provided
+        if (spaceAndChildrenIds) {
+          inventoryQuery = inventoryQuery.where(
+            "inventories.space_id",
+            "in",
+            spaceAndChildrenIds,
+          );
+        }
+
+        return [jsonArrayFrom(inventoryQuery).as("inventories")];
+      });
     }
 
     const item = await query.executeTakeFirst();

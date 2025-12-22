@@ -15,6 +15,7 @@ type GetManyItemsReturn = {
 
 type GetOneItemProps = {
   id: number;
+  spaceId?: number;
   withInventory?: boolean;
 };
 
