@@ -2,10 +2,11 @@ import { GetManyPropsType } from "@/shared/application/types/get-all.type.ts";
 import { ItemEntity as Item } from "../domain/item.entity.ts";
 import { GetManyMetadataType } from "../../../shared/application/types/get-many-metadata.type.ts";
 
-type GetManyItemsProps = GetManyPropsType & {
+type GetManyItemsProps = Omit<GetManyPropsType, "status"> & {
   spaceId: number;
   type: "full" | "partial";
   withInventory?: boolean;
+  status?: "active" | "inactive" | "discounted" | "all";
 };
 
 type GetManyItemsReturn = {

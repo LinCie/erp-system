@@ -82,16 +82,45 @@ class ItemRepository implements IItemRepository {
     let countQuery = this.db
       .selectFrom("items")
       .where("space_id", "in", spaceAndParentIds)
-      .where("status", "=", status)
       .where("deleted_at", "is", null);
+
+    switch (status) {
+      case "discounted":
+        countQuery = countQuery
+          .where("status", "=", "active")
+          .where("price_discount", "is not", null)
+          .where("price_discount", "!=", "0");
+        break;
+      case "all":
+        countQuery = countQuery.where("status", "in", ["active", "inactive"]);
+        break;
+      default:
+        countQuery = countQuery.where("status", "=", status);
+        break;
+    }
 
     let query = this.db
       .selectFrom("items")
       .where("space_id", "in", spaceAndParentIds)
-      .where("status", "=", status)
+      .where("deleted_at", "is", null)
       .orderBy(sort, order)
       .limit(limit)
       .offset((page - 1) * limit);
+
+    switch (status) {
+      case "discounted":
+        query = query
+          .where("status", "=", "active")
+          .where("price_discount", "is not", null)
+          .where("price_discount", "!=", "0");
+        break;
+      case "all":
+        query = query.where("status", "in", ["active", "inactive"]);
+        break;
+      default:
+        query = query.where("status", "=", status);
+        break;
+    }
 
     if (search) {
       const searches = search.split(" ").filter(Boolean);
@@ -165,6 +194,7 @@ class ItemRepository implements IItemRepository {
     }
 
     const result = await query.execute();
+    console.log(result);
 
     return {
       data: result.map((row) => this.mapper.toEntity(row)),
