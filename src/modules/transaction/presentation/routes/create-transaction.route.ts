@@ -9,10 +9,20 @@ const createTransactionRoute = createRoute({
   tags: ["Transactions"],
   summary: "Create a new transaction",
   security: [{ Bearer: [] }],
-  request: { body: { content: { "application/json": { schema: createTransactionBodySchema } } } },
+  request: {
+    body: {
+      content: { "application/json": { schema: createTransactionBodySchema } },
+    },
+  },
   responses: {
-    201: { content: { "application/json": { schema: transactionResponseSchema } }, description: "Transaction created successfully" },
-    400: { content: { "application/json": { schema: errorResponseSchema } }, description: "Validation error" },
+    201: {
+      content: { "application/json": { schema: transactionResponseSchema } },
+      description: "Transaction created successfully",
+    },
+    400: {
+      content: { "application/json": { schema: errorResponseSchema } },
+      description: "Validation error",
+    },
   },
 });
 

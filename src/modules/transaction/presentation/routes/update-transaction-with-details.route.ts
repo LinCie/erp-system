@@ -1,31 +1,29 @@
 import { createRoute } from "@hono/zod-openapi";
-import { z } from "@hono/zod-openapi";
 import { transactionIdParamSchema } from "../validators/transaction-id-param.validator.ts";
+import { updateTransactionWithDetailsBodySchema } from "../validators/update-transaction-with-details-body.validator.ts";
 import { transactionWithDetailsResponseSchema } from "../schemas/transaction-response.schema.ts";
 import { errorResponseSchema } from "../schemas/error-response.schema.ts";
 
-const getOneTransactionQuerySchema = z
-  .object({
-    includeDetails: z.coerce.boolean().optional().openapi({ example: false }),
-  })
-  .openapi("GetOneTransactionQuery");
-
-const getOneTransactionRoute = createRoute({
-  method: "get",
-  path: "/{id}",
+const updateTransactionWithDetailsRoute = createRoute({
+  method: "put",
+  path: "/{id}/with-details",
   tags: ["Transactions"],
-  summary: "Get transaction by ID",
+  summary: "Update transaction with details atomically",
   security: [{ Bearer: [] }],
   request: {
     params: transactionIdParamSchema,
-    query: getOneTransactionQuerySchema,
+    body: {
+      content: {
+        "application/json": { schema: updateTransactionWithDetailsBodySchema },
+      },
+    },
   },
   responses: {
     200: {
       content: {
         "application/json": { schema: transactionWithDetailsResponseSchema },
       },
-      description: "Transaction details",
+      description: "Transaction and details updated successfully",
     },
     400: {
       content: { "application/json": { schema: errorResponseSchema } },
@@ -34,4 +32,4 @@ const getOneTransactionRoute = createRoute({
   },
 });
 
-export { getOneTransactionRoute };
+export { updateTransactionWithDetailsRoute };

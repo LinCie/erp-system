@@ -12,11 +12,19 @@ const updateTransactionRoute = createRoute({
   security: [{ Bearer: [] }],
   request: {
     params: transactionIdParamSchema,
-    body: { content: { "application/json": { schema: updateTransactionBodySchema } } },
+    body: {
+      content: { "application/json": { schema: updateTransactionBodySchema } },
+    },
   },
   responses: {
-    200: { content: { "application/json": { schema: transactionResponseSchema } }, description: "Transaction updated successfully" },
-    400: { content: { "application/json": { schema: errorResponseSchema } }, description: "Validation error" },
+    200: {
+      content: { "application/json": { schema: transactionResponseSchema } },
+      description: "Transaction updated successfully",
+    },
+    400: {
+      content: { "application/json": { schema: errorResponseSchema } },
+      description: "Validation error",
+    },
   },
 });
 
