@@ -11,7 +11,10 @@ const deleteTransactionRoute = createRoute({
   request: { params: transactionIdParamSchema },
   responses: {
     204: { description: "Transaction deleted successfully" },
-    400: { content: { "application/json": { schema: errorResponseSchema } }, description: "Validation error" },
+    400: {
+      content: { "application/json": { schema: errorResponseSchema } },
+      description: "Validation error",
+    },
   },
 });
 
