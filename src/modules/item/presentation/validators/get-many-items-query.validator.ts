@@ -8,7 +8,7 @@ const getManyItemsQuerySchema = z
     limit: z.coerce.number().positive().optional().openapi({ example: 10 }),
     page: z.coerce.number().positive().optional().openapi({ example: 1 }),
     withInventory: z.coerce.boolean().optional().openapi({ example: true }),
-    status: z.enum(["active", "inactive", "discounted", "all"]).optional()
+    status: z.enum(["active", "inactive", "discounted", "all", "unknown"]).optional()
       .openapi({
         example: "active",
       }),

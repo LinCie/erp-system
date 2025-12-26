@@ -91,8 +91,13 @@ class ItemRepository implements IItemRepository {
           .where("price_discount", "is not", null)
           .where("price_discount", "!=", "0");
         break;
+      case "unknown":
+        countQuery = countQuery.where("status", "not in", [
+          "active",
+          "inactive",
+        ]);
+        break;
       case "all":
-        countQuery = countQuery.where("status", "in", ["active", "inactive"]);
         break;
       default:
         countQuery = countQuery.where("status", "=", status);
@@ -114,8 +119,13 @@ class ItemRepository implements IItemRepository {
           .where("price_discount", "is not", null)
           .where("price_discount", "!=", "0");
         break;
+      case "unknown":
+        query = query.where("status", "not in", [
+          "active",
+          "inactive",
+        ]);
+        break;
       case "all":
-        query = query.where("status", "in", ["active", "inactive"]);
         break;
       default:
         query = query.where("status", "=", status);
@@ -131,6 +141,7 @@ class ItemRepository implements IItemRepository {
             eb.or([
               eb("name", "like", `%${s}%`),
               eb("sku", "like", `%${s}%`),
+              eb("code", "like", ""),
             ])
           );
           return eb.and(filters);
@@ -194,7 +205,6 @@ class ItemRepository implements IItemRepository {
     }
 
     const result = await query.execute();
-    console.log(result);
 
     return {
       data: result.map((row) => this.mapper.toEntity(row)),

@@ -6,12 +6,13 @@ interface ItemImage extends FileType {
   isNew?: boolean;
 }
 
-interface ItemEntity extends BaseEntity {
+interface ItemEntity extends Omit<BaseEntity, "status"> {
   name: string;
   cost: string;
   price: string;
   weight: string;
   space_id: number;
+  status: string | "active" | "inactive" | "archived";
   inventories?: InventoryItem[];
   files?: FileType[];
   price_discount?: string;

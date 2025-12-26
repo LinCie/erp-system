@@ -38,7 +38,7 @@ class ItemMapper {
     files: z.array(this.fileSchema).optional(),
     weight: z.string(),
     notes: z.string().optional(),
-    status: z.enum(["active", "inactive", "archived"]),
+    status: z.union([z.string(), z.enum(["active", "inactive", "archived"])]),
     images: z.array(this.itemImageSchema).optional(),
     space_id: z.number(),
     inventories: z.array(this.inventoryItemSchema).optional(),
@@ -58,7 +58,7 @@ class ItemMapper {
     weight: z.string(),
     notes: z.string().nullable(),
     files: z.string().nullable(),
-    status: z.enum(["active", "inactive", "archived"]),
+    status: z.union([z.string(), z.enum(["active", "inactive", "archived"])]),
     images: z.string().nullable(),
     space_id: z.number(),
   });

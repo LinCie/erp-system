@@ -6,7 +6,7 @@ type GetManyItemsProps = Omit<GetManyPropsType, "status"> & {
   spaceId: number;
   type: "full" | "partial";
   withInventory?: boolean;
-  status?: "active" | "inactive" | "discounted" | "all";
+  status?: "active" | "inactive" | "discounted" | "all" | "unknown";
 };
 
 type GetManyItemsReturn = {
