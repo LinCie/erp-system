@@ -5,6 +5,7 @@ import { jwt } from "hono/jwt";
 import { InventoryService } from "../application/inventory.service.ts";
 import { getManyInventoriesRoute } from "./routes/get-many-inventories.route.ts";
 import { getOneInventoryRoute } from "./routes/get-one-inventory.route.ts";
+import { getMutationsRoute } from "./routes/get-mutations.route.ts";
 import { createInventoryRoute } from "./routes/create-inventory.route.ts";
 import { updateInventoryRoute } from "./routes/update-inventory.route.ts";
 import { deleteInventoryRoute } from "./routes/delete-inventory.route.ts";
@@ -26,6 +27,13 @@ function defineInventoryController(service: InventoryService) {
   app.openapi(getOneInventoryRoute, async (c) => {
     const { id } = c.req.valid("param");
     const result = await service.getOne(id);
+    return c.json(result, 200);
+  });
+
+  app.openapi(getMutationsRoute, async (c) => {
+    const { id } = c.req.valid("param");
+    const query = c.req.valid("query");
+    const result = await service.getMutations({ inventory_id: id, ...query });
     return c.json(result, 200);
   });
 

@@ -11,8 +11,14 @@ const getOneInventoryRoute = createRoute({
   security: [{ Bearer: [] }],
   request: { params: inventoryIdParamSchema },
   responses: {
-    200: { content: { "application/json": { schema: inventoryResponseSchema } }, description: "Inventory details" },
-    400: { content: { "application/json": { schema: errorResponseSchema } }, description: "Validation error" },
+    200: {
+      content: { "application/json": { schema: inventoryResponseSchema } },
+      description: "Inventory details",
+    },
+    400: {
+      content: { "application/json": { schema: errorResponseSchema } },
+      description: "Validation error",
+    },
   },
 });
 

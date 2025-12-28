@@ -11,7 +11,10 @@ const deleteInventoryRoute = createRoute({
   request: { params: inventoryIdParamSchema },
   responses: {
     204: { description: "Inventory deleted successfully" },
-    400: { content: { "application/json": { schema: errorResponseSchema } }, description: "Validation error" },
+    400: {
+      content: { "application/json": { schema: errorResponseSchema } },
+      description: "Validation error",
+    },
   },
 });
 

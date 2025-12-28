@@ -6,6 +6,7 @@ import { z } from "@hono/zod-openapi";
 
 class ItemMapper {
   private inventoryItemSchema = z.object({
+    id: z.number(),
     balance: z.coerce.number(),
     cost_per_unit: z.coerce.number(),
     notes: z.string().optional(),

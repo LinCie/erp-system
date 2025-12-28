@@ -2,7 +2,10 @@ import { z } from "@hono/zod-openapi";
 
 const inventoryIdParamSchema = z
   .object({
-    id: z.coerce.number().openapi({ param: { name: "id", in: "path" }, example: 1 }),
+    id: z.coerce.number().openapi({
+      param: { name: "id", in: "path" },
+      example: 1,
+    }),
   })
   .openapi("InventoryIdParam");
 

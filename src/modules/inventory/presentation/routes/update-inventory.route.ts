@@ -12,11 +12,19 @@ const updateInventoryRoute = createRoute({
   security: [{ Bearer: [] }],
   request: {
     params: inventoryIdParamSchema,
-    body: { content: { "application/json": { schema: updateInventoryBodySchema } } },
+    body: {
+      content: { "application/json": { schema: updateInventoryBodySchema } },
+    },
   },
   responses: {
-    200: { content: { "application/json": { schema: inventoryResponseSchema } }, description: "Inventory updated successfully" },
-    400: { content: { "application/json": { schema: errorResponseSchema } }, description: "Validation error" },
+    200: {
+      content: { "application/json": { schema: inventoryResponseSchema } },
+      description: "Inventory updated successfully",
+    },
+    400: {
+      content: { "application/json": { schema: errorResponseSchema } },
+      description: "Validation error",
+    },
   },
 });
 

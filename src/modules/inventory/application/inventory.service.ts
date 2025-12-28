@@ -1,5 +1,6 @@
 import {
   GetManyInventoriesProps,
+  GetMutationsProps,
   IInventoryRepository,
 } from "./inventory-repository.interface.ts";
 import { InventoryEntity as Inventory } from "../domain/inventory.entity.ts";
@@ -13,6 +14,10 @@ class InventoryService {
 
   async getOne(id: number) {
     return await this.inventoryRepository.getOne(id);
+  }
+
+  async getMutations(props: GetMutationsProps) {
+    return await this.inventoryRepository.getMutations(props);
   }
 
   async create(data: Omit<Inventory, "id">) {

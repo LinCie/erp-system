@@ -9,10 +9,20 @@ const createInventoryRoute = createRoute({
   tags: ["Inventories"],
   summary: "Create a new inventory",
   security: [{ Bearer: [] }],
-  request: { body: { content: { "application/json": { schema: createInventoryBodySchema } } } },
+  request: {
+    body: {
+      content: { "application/json": { schema: createInventoryBodySchema } },
+    },
+  },
   responses: {
-    201: { content: { "application/json": { schema: inventoryResponseSchema } }, description: "Inventory created successfully" },
-    400: { content: { "application/json": { schema: errorResponseSchema } }, description: "Validation error" },
+    201: {
+      content: { "application/json": { schema: inventoryResponseSchema } },
+      description: "Inventory created successfully",
+    },
+    400: {
+      content: { "application/json": { schema: errorResponseSchema } },
+      description: "Validation error",
+    },
   },
 });
 

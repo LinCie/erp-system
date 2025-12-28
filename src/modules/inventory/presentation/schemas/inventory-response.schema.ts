@@ -14,4 +14,4 @@ const getManyInventoriesResponseSchema = z.object({
   metadata: getManyMetadataSchema,
 }).openapi("GetManyInventoriesResponse");
 
-export { inventoryResponseSchema, getManyInventoriesResponseSchema };
+export { getManyInventoriesResponseSchema, inventoryResponseSchema };

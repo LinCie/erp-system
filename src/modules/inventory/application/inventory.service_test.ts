@@ -1,11 +1,17 @@
 import { assertEquals, assertRejects } from "@std/assert";
 import { InventoryService } from "./inventory.service.ts";
 import { MockInventoryRepository } from "../__tests__/mocks/inventory.repository.mock.ts";
-import { inventoriesList, createInventoryData, updateInventoryData } from "../__tests__/fixtures/inventory.fixtures.ts";
+import {
+  createInventoryData,
+  inventoriesList,
+  updateInventoryData,
+} from "../__tests__/fixtures/inventory.fixtures.ts";
 import type { GetManyInventoriesProps } from "./inventory-repository.interface.ts";
 
 Deno.test("InventoryService - getMany delegates to repository", async () => {
-  const mockRepo = new MockInventoryRepository({ inventories: inventoriesList });
+  const mockRepo = new MockInventoryRepository({
+    inventories: inventoriesList,
+  });
   const service = new InventoryService(mockRepo);
   const props: GetManyInventoriesProps = { page: 1, limit: 10 };
 
@@ -18,7 +24,9 @@ Deno.test("InventoryService - getMany delegates to repository", async () => {
 });
 
 Deno.test("InventoryService - getOne delegates to repository", async () => {
-  const mockRepo = new MockInventoryRepository({ inventories: inventoriesList });
+  const mockRepo = new MockInventoryRepository({
+    inventories: inventoriesList,
+  });
   const service = new InventoryService(mockRepo);
 
   const result = await service.getOne(1);
@@ -40,7 +48,9 @@ Deno.test("InventoryService - create delegates to repository", async () => {
 });
 
 Deno.test("InventoryService - update delegates to repository", async () => {
-  const mockRepo = new MockInventoryRepository({ inventories: inventoriesList });
+  const mockRepo = new MockInventoryRepository({
+    inventories: inventoriesList,
+  });
   const service = new InventoryService(mockRepo);
 
   const result = await service.update(1, updateInventoryData);
@@ -51,7 +61,9 @@ Deno.test("InventoryService - update delegates to repository", async () => {
 });
 
 Deno.test("InventoryService - delete delegates to repository", async () => {
-  const mockRepo = new MockInventoryRepository({ inventories: inventoriesList });
+  const mockRepo = new MockInventoryRepository({
+    inventories: inventoriesList,
+  });
   const service = new InventoryService(mockRepo);
 
   await service.delete(1);
@@ -61,35 +73,57 @@ Deno.test("InventoryService - delete delegates to repository", async () => {
 });
 
 Deno.test("InventoryService - getMany propagates repository errors", async () => {
-  const mockRepo = new MockInventoryRepository({ shouldThrow: new Error("Database connection failed") });
+  const mockRepo = new MockInventoryRepository({
+    shouldThrow: new Error("Database connection failed"),
+  });
   const service = new InventoryService(mockRepo);
 
-  await assertRejects(() => service.getMany({}), Error, "Database connection failed");
+  await assertRejects(
+    () => service.getMany({}),
+    Error,
+    "Database connection failed",
+  );
 });
 
 Deno.test("InventoryService - getOne propagates repository errors", async () => {
-  const mockRepo = new MockInventoryRepository({ shouldThrow: new Error("Inventory not found") });
+  const mockRepo = new MockInventoryRepository({
+    shouldThrow: new Error("Inventory not found"),
+  });
   const service = new InventoryService(mockRepo);
 
   await assertRejects(() => service.getOne(999), Error, "Inventory not found");
 });
 
 Deno.test("InventoryService - create propagates repository errors", async () => {
-  const mockRepo = new MockInventoryRepository({ shouldThrow: new Error("Validation failed") });
+  const mockRepo = new MockInventoryRepository({
+    shouldThrow: new Error("Validation failed"),
+  });
   const service = new InventoryService(mockRepo);
 
-  await assertRejects(() => service.create(createInventoryData), Error, "Validation failed");
+  await assertRejects(
+    () => service.create(createInventoryData),
+    Error,
+    "Validation failed",
+  );
 });
 
 Deno.test("InventoryService - update propagates repository errors", async () => {
-  const mockRepo = new MockInventoryRepository({ shouldThrow: new Error("Inventory not found") });
+  const mockRepo = new MockInventoryRepository({
+    shouldThrow: new Error("Inventory not found"),
+  });
   const service = new InventoryService(mockRepo);
 
-  await assertRejects(() => service.update(999, updateInventoryData), Error, "Inventory not found");
+  await assertRejects(
+    () => service.update(999, updateInventoryData),
+    Error,
+    "Inventory not found",
+  );
 });
 
 Deno.test("InventoryService - delete propagates repository errors", async () => {
-  const mockRepo = new MockInventoryRepository({ shouldThrow: new Error("Inventory not found") });
+  const mockRepo = new MockInventoryRepository({
+    shouldThrow: new Error("Inventory not found"),
+  });
   const service = new InventoryService(mockRepo);
 
   await assertRejects(() => service.delete(999), Error, "Inventory not found");

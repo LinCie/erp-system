@@ -11,8 +11,16 @@ const getManyInventoriesRoute = createRoute({
   security: [{ Bearer: [] }],
   request: { query: getManyInventoriesQuerySchema },
   responses: {
-    200: { content: { "application/json": { schema: getManyInventoriesResponseSchema } }, description: "List of inventories" },
-    400: { content: { "application/json": { schema: errorResponseSchema } }, description: "Validation error" },
+    200: {
+      content: {
+        "application/json": { schema: getManyInventoriesResponseSchema },
+      },
+      description: "List of inventories",
+    },
+    400: {
+      content: { "application/json": { schema: errorResponseSchema } },
+      description: "Validation error",
+    },
   },
 });
 

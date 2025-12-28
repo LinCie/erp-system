@@ -193,6 +193,7 @@ class ItemRepository implements IItemRepository {
             .where("inventories.space_id", "in", spaceAndChildrenIds)
             .leftJoin("spaces", "spaces.id", "inventories.space_id")
             .select([
+              "inventories.id",
               "inventories.balance",
               "inventories.notes",
               "inventories.status",
