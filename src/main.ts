@@ -5,7 +5,7 @@ import { createAuthModule } from "./modules/auth/presentation/auth.module.ts";
 import { inventoryController } from "./modules/inventory/presentation/inventory.module.ts";
 import { itemController } from "./modules/item/presentation/item.module.ts";
 import { spaceController } from "./modules/space/presentation/space.module.ts";
-import { transactionController } from "./modules/transaction/presentation/transaction.module.ts";
+import { tradeController } from "./modules/trade/presentation/trade.module.ts";
 import {
   errorHandler,
   notFoundHandler,
@@ -24,7 +24,7 @@ async function main() {
   app.route("/items", itemController);
   app.route("/inventories", inventoryController);
   app.route("/spaces", spaceController);
-  app.route("/transactions", transactionController);
+  app.route("/trades", tradeController);
 
   // OpenAPI JSON spec endpoint
   app.doc("/doc", {
