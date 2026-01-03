@@ -144,8 +144,6 @@ class ItemMapper {
    */
   toEntity(row: Record<string, unknown>): ItemEntity {
     try {
-      console.log(row);
-
       // Transform inventories: convert null to undefined for optional fields
       const inventories = Array.isArray(row.inventories)
         ? row.inventories.map((inv: Record<string, unknown>) => ({
