@@ -26,9 +26,9 @@ class AuthSecurity implements IAuthSecurity {
    * @param hash - Bcrypt hash to compare against
    * @returns Promise resolving to true if password matches, false otherwise
    */
-  verifyPassword(password: string, hash: string) {
+  verifyPassword(password: string, hash: string): Promise<boolean> {
     const parsedHash = hash.replace(/^\$2y/, "$2b");
-    return bcrypt.compare(password, parsedHash);
+    return Promise.resolve(bcrypt.compareSync(password, parsedHash));
   }
 
   /**
@@ -156,9 +156,10 @@ class AuthSecurity implements IAuthSecurity {
    * @param password - Plain text password to hash
    * @returns Promise resolving to bcrypt hash string in PHP-compatible format
    */
-  async generatePasswordHash(password: string) {
-    const hash = await bcrypt.hash(password, 12);
-    return hash.replace(/^\$2[ab]\$/, "$2y$");
+  generatePasswordHash(password: string): Promise<string> {
+    // Use sync version - async bcryptjs uses Workers which have issues in Deno
+    const hash = bcrypt.hashSync(password, 12);
+    return Promise.resolve(hash.replace(/^\$2[ab]\$/, "$2y$"));
   }
 
   /**
