@@ -3,6 +3,7 @@ import type { Items } from "@/shared/infrastructure/persistence/database.d.ts";
 import type { ItemEntity } from "../domain/item.entity.ts";
 
 import { z } from "@hono/zod-openapi";
+import { MapperError } from "@/shared/domain/errors/mapper.error.ts";
 
 class ItemMapper {
   private inventoryItemSchema = z.object({
@@ -75,26 +76,37 @@ class ItemMapper {
    * @returns An insertable object
    */
   toInsertable(entity: ItemEntity): Insertable<Items> {
-    const data = {
-      id: entity.id,
-      name: entity.name,
-      cost: entity.cost,
-      price: entity.price,
-      weight: entity.weight,
-      status: entity.status,
-      space_id: entity.space_id,
-      price_discount: entity.price_discount ?? null,
-      code: entity.code ?? null,
-      description: entity.description ?? null,
-      sku: entity.sku ?? null,
-      notes: entity.notes ?? null,
-      images: entity.images ? JSON.stringify(entity.images) : null,
-      files: entity.files ? JSON.stringify(entity.files) : null,
-      created_at: entity.created_at ?? null,
-      updated_at: entity.updated_at ?? null,
-      deleted_at: entity.deleted_at ?? null,
-    };
-    return this.insertableSchema.parse(data);
+    try {
+      const data = {
+        id: entity.id,
+        name: entity.name,
+        cost: entity.cost,
+        price: entity.price,
+        weight: entity.weight,
+        status: entity.status,
+        space_id: entity.space_id,
+        price_discount: entity.price_discount ?? null,
+        code: entity.code ?? null,
+        description: entity.description ?? null,
+        sku: entity.sku ?? null,
+        notes: entity.notes ?? null,
+        images: entity.images ? JSON.stringify(entity.images) : null,
+        files: entity.files ? JSON.stringify(entity.files) : null,
+        created_at: entity.created_at ?? null,
+        updated_at: entity.updated_at ?? null,
+        deleted_at: entity.deleted_at ?? null,
+      };
+      return this.insertableSchema.parse(data);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw MapperError.invalidEntity("Item", error.issues, error);
+      }
+      throw MapperError.transformationFailed(
+        "Item",
+        "toInsertable",
+        error as Error,
+      );
+    }
   }
 
   /**
@@ -104,13 +116,24 @@ class ItemMapper {
    * @returns An updateable object
    */
   toUpdateable(entity: Partial<ItemEntity>): Updateable<Items> {
-    const { images, files, ...rest } = entity;
-    const data = {
-      ...rest,
-      images: images ? JSON.stringify(images) : undefined,
-      files: files ? JSON.stringify(files) : undefined,
-    };
-    return this.updateableSchema.parse(data);
+    try {
+      const { images, files, ...rest } = entity;
+      const data = {
+        ...rest,
+        images: images ? JSON.stringify(images) : undefined,
+        files: files ? JSON.stringify(files) : undefined,
+      };
+      return this.updateableSchema.parse(data);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw MapperError.invalidEntity("Item", error.issues, error);
+      }
+      throw MapperError.transformationFailed(
+        "Item",
+        "toUpdateable",
+        error as Error,
+      );
+    }
   }
 
   /**
@@ -120,35 +143,48 @@ class ItemMapper {
    * @returns An item entity
    */
   toEntity(row: Record<string, unknown>): ItemEntity {
-    // Transform inventories: convert null to undefined for optional fields
-    const inventories = Array.isArray(row.inventories)
-      ? row.inventories.map((inv: Record<string, unknown>) => ({
-        ...inv,
-        notes: inv.notes ?? undefined,
-      }))
-      : undefined;
+    try {
+      console.log(row);
 
-    const data = {
-      id: row.id,
-      name: row.name,
-      cost: row.cost,
-      price: row.price,
-      weight: row.weight,
-      status: row.status,
-      files: row.files ?? undefined,
-      price_discount: row.price_discount ?? undefined,
-      space_id: row.space_id ?? undefined,
-      code: row.code ?? undefined,
-      description: row.description ?? undefined,
-      sku: row.sku ?? undefined,
-      notes: row.notes ?? undefined,
-      images: row.images ?? undefined,
-      inventories,
-      created_at: row.created_at ?? undefined,
-      updated_at: row.updated_at ?? undefined,
-      deleted_at: row.deleted_at ?? undefined,
-    };
-    return this.entitySchema.parse(data);
+      // Transform inventories: convert null to undefined for optional fields
+      const inventories = Array.isArray(row.inventories)
+        ? row.inventories.map((inv: Record<string, unknown>) => ({
+          ...inv,
+          notes: inv.notes ?? undefined,
+        }))
+        : undefined;
+
+      const data = {
+        id: row.id,
+        name: row.name,
+        cost: row.cost,
+        price: row.price,
+        weight: row.weight,
+        status: row.status,
+        files: row.files ?? undefined,
+        price_discount: row.price_discount ?? undefined,
+        space_id: row.space_id ?? undefined,
+        code: row.code ?? undefined,
+        description: row.description ?? undefined,
+        sku: row.sku ?? undefined,
+        notes: row.notes ?? undefined,
+        images: row.images ?? undefined,
+        inventories,
+        created_at: row.created_at ?? undefined,
+        updated_at: row.updated_at ?? undefined,
+        deleted_at: row.deleted_at ?? undefined,
+      };
+      return this.entitySchema.parse(data);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw MapperError.invalidRow("Item", error.issues, error);
+      }
+      throw MapperError.transformationFailed(
+        "Item",
+        "toEntity",
+        error as Error,
+      );
+    }
   }
 }
 
