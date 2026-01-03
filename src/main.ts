@@ -1,3 +1,5 @@
+import "@/shared/infrastructure/logging/index.ts";
+
 import { logger } from "hono/logger";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";

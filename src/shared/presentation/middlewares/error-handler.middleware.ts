@@ -1,4 +1,5 @@
 import type { Context, ErrorHandler } from "hono";
+import * as Sentry from "@sentry/node";
 import { HTTPException } from "hono/http-exception";
 import { MapperError } from "../../domain/errors/mapper.error.ts";
 
@@ -19,14 +20,15 @@ const KNOWN_ERRORS: Record<string, 400 | 401 | 403 | 404 | 500> = {
  * Handles HTTPException and known application errors
  */
 const errorHandler: ErrorHandler = (err: Error, c: Context) => {
-  if (err instanceof MapperError) {
-    console.error("Mapper error:", {
-      code: err.code,
-      field: err.field,
-      details: err.details,
-      cause: err.cause,
-    });
+  const env = Deno.env.get("NODE_ENV");
 
+  if (env === "production") {
+    Sentry.captureException(err);
+  } else {
+    console.error(err);
+  }
+
+  if (err instanceof MapperError) {
     return c.json({
       error: err.message,
       code: err.code,
@@ -34,8 +36,6 @@ const errorHandler: ErrorHandler = (err: Error, c: Context) => {
       details: err.details,
     }, 400);
   }
-
-  console.error(`[Error] ${err.message}`);
 
   if (err instanceof HTTPException) {
     return c.json(
