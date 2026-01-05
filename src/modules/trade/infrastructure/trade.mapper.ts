@@ -33,10 +33,18 @@ class TradeMapper {
     name: z.string(),
   });
 
+  // Item info schema for nested item in details
+  private itemInfoSchema = z.object({
+    id: z.number(),
+    name: z.string(),
+    sku: z.string().optional(),
+    cost: z.coerce.string(),
+    price: z.coerce.string(),
+  });
+
   // Trade detail schema for entity transformation
   private detailEntitySchema = z.object({
     id: z.number(),
-    item_id: z.number().optional(),
     model_type: z.string(),
     sku: z.string().optional(),
     name: z.string().optional(),
@@ -47,6 +55,7 @@ class TradeMapper {
     debit: z.number(),
     credit: z.number(),
     notes: z.string().optional(),
+    item: this.itemInfoSchema.optional(),
   });
 
   // Trade entity schema
@@ -302,17 +311,6 @@ class TradeMapper {
       }
     }
 
-    // Compute SKU from details (comma-separated list)
-    let sku: string | undefined;
-    if (details && details.length > 0) {
-      const skuList = details
-        .map((d) => d.sku)
-        .filter((s): s is string => !!s);
-      if (skuList.length > 0) {
-        sku = skuList.join(", ");
-      }
-    }
-
     // Compute all_notes (sender_notes + handler_notes)
     const senderNotes = row.sender_notes as string | undefined;
     const handlerNotes = row.handler_notes as string | undefined;
@@ -346,7 +344,6 @@ class TradeMapper {
       sender,
       receiver,
       handler,
-      sku,
       all_notes,
       created_at: row.created_at ?? undefined,
       updated_at: row.updated_at ?? undefined,
@@ -391,9 +388,23 @@ class TradeMapper {
    * Transform database row to trade detail entity
    */
   detailToEntity(row: Record<string, unknown>): TradeDetailType {
+    // Transform item if present
+    let item: TradeDetailType["item"] = undefined;
+    if (row.item && typeof row.item === "object") {
+      const i = row.item as Record<string, unknown>;
+      if (i.id && i.name) {
+        item = {
+          id: i.id as number,
+          name: i.name as string,
+          sku: (i.sku as string) ?? undefined,
+          cost: (i.cost as string) ?? "0",
+          price: (i.price as string) ?? "0",
+        };
+      }
+    }
+
     const data = {
       id: row.id,
-      item_id: row.detail_id ?? undefined,
       model_type: row.model_type ?? "UNDF",
       sku: row.sku ?? undefined,
       name: row.name ?? undefined,
@@ -404,6 +415,7 @@ class TradeMapper {
       debit: row.debit ?? "0",
       credit: row.credit ?? "0",
       notes: row.notes ?? undefined,
+      item,
     };
 
     return this.detailEntitySchema.parse(data);

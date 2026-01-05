@@ -38,13 +38,26 @@ const playerInfoSchema = z
   .openapi("PlayerInfo");
 
 /**
+ * Schema for item info in trade detail responses
+ * Only populated when detail_type is 'ITM'
+ */
+const itemInfoSchema = z
+  .object({
+    id: z.number().openapi({ example: 1 }),
+    name: z.string().openapi({ example: "Product Name" }),
+    sku: z.string().optional().openapi({ example: "SKU-001" }),
+    cost: z.string().openapi({ example: "1000.00" }),
+    price: z.string().openapi({ example: "1500.00" }),
+  })
+  .openapi("ItemInfo");
+
+/**
  * Schema for trade detail (line item) responses
  * Represents individual items within a trade transaction
  */
 const tradeDetailResponseSchema = z
   .object({
     id: z.number().openapi({ example: 1 }),
-    item_id: z.number().optional().openapi({ example: 100 }),
     model_type: z.string().openapi({ example: "SO" }),
     sku: z.string().optional().openapi({ example: "SKU-001" }),
     name: z.string().optional().openapi({ example: "Product Name" }),
@@ -56,6 +69,15 @@ const tradeDetailResponseSchema = z
     credit: z.number().openapi({ example: 0 }),
     notes: z.string().optional().openapi({
       example: "Special handling required",
+    }),
+    item: itemInfoSchema.optional().openapi({
+      example: {
+        id: 1,
+        name: "Product Name",
+        sku: "SKU-001",
+        cost: "1000.00",
+        price: "1500.00",
+      },
     }),
   })
   .openapi("TradeDetailResponse");
@@ -144,9 +166,6 @@ const tradeResponseSchema = z
     handler: playerInfoSchema.optional().openapi({
       example: { id: 30, code: "TEAM-002", name: "Handler Team" },
     }),
-    sku: z.string().optional().openapi({
-      example: "SKU-001, SKU-002, SKU-003",
-    }),
     all_notes: z.string().optional().openapi({
       example: "Sender notes - Handler notes",
     }),
@@ -171,6 +190,7 @@ const getManyTradesResponseSchema = z
 
 export {
   getManyTradesResponseSchema,
+  itemInfoSchema,
   playerInfoSchema,
   tradeDetailResponseSchema,
   tradeFileSchema,

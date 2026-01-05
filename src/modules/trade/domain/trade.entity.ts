@@ -38,8 +38,6 @@ interface TradeEntity extends Omit<BaseEntity, "status"> {
   receiver?: PlayerInfo;
   /** Player info for handler relationship */
   handler?: PlayerInfo;
-  /** Computed: comma-separated SKUs from details */
-  sku?: string;
   /** Computed: combined sender_notes and handler_notes */
   all_notes?: string;
 }

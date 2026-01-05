@@ -153,11 +153,8 @@ class TradeRepository implements ITradeRepository {
               "transactions.id",
             )
             .where("transaction_details.deleted_at", "is", null)
-            .select([
+            .select((eb2) => [
               "transaction_details.id",
-              "transaction_details.detail_id",
-              "transaction_details.model_type",
-              "transaction_details.sku",
               "transaction_details.name",
               "transaction_details.quantity",
               "transaction_details.price",
@@ -166,6 +163,18 @@ class TradeRepository implements ITradeRepository {
               "transaction_details.debit",
               "transaction_details.credit",
               "transaction_details.notes",
+              jsonObjectFrom(
+                eb2.selectFrom("items")
+                  .whereRef("items.id", "=", "transaction_details.detail_id")
+                  .where("transaction_details.detail_type", "=", "ITM")
+                  .select([
+                    "items.id",
+                    "items.name",
+                    "items.sku",
+                    "items.cost",
+                    "items.price",
+                  ]),
+              ).as("item"),
             ]),
         ).as("details"),
       ]);
@@ -206,7 +215,7 @@ class TradeRepository implements ITradeRepository {
   }
 
   async getOne(props: GetOneTradeProps): Promise<Trade> {
-    const { id, withDetails = true } = props;
+    const { id, withDetails = false, withPlayers = false } = props;
 
     let query = this.db
       .selectFrom("transactions")
@@ -249,9 +258,10 @@ class TradeRepository implements ITradeRepository {
               "transactions.id",
             )
             .where("transaction_details.deleted_at", "is", null)
-            .select([
+            .select((eb2) => [
               "transaction_details.id",
               "transaction_details.detail_id",
+              "transaction_details.detail_type",
               "transaction_details.model_type",
               "transaction_details.sku",
               "transaction_details.name",
@@ -262,8 +272,40 @@ class TradeRepository implements ITradeRepository {
               "transaction_details.debit",
               "transaction_details.credit",
               "transaction_details.notes",
+              jsonObjectFrom(
+                eb2.selectFrom("items")
+                  .whereRef("items.id", "=", "transaction_details.detail_id")
+                  .where("transaction_details.detail_type", "=", "ITM")
+                  .select([
+                    "items.id",
+                    "items.name",
+                    "items.sku",
+                    "items.cost",
+                    "items.price",
+                  ]),
+              ).as("item"),
             ]),
         ).as("details"),
+      ]);
+    }
+
+    if (withPlayers) {
+      query = query.select((eb) => [
+        jsonObjectFrom(
+          eb.selectFrom("players")
+            .whereRef("players.id", "=", "transactions.sender_id")
+            .select(["players.id", "players.code", "players.name"]),
+        ).as("sender"),
+        jsonObjectFrom(
+          eb.selectFrom("players")
+            .whereRef("players.id", "=", "transactions.receiver_id")
+            .select(["players.id", "players.code", "players.name"]),
+        ).as("receiver"),
+        jsonObjectFrom(
+          eb.selectFrom("players")
+            .whereRef("players.id", "=", "transactions.handler_id")
+            .select(["players.id", "players.code", "players.name"]),
+        ).as("handler"),
       ]);
     }
 

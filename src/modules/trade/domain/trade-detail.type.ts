@@ -1,3 +1,5 @@
+import type { ItemInfo } from "./item-info.type.ts";
+
 /**
  * TradeDetailType represents a line item within a trade transaction.
  * Contains item information, quantities, pricing, and calculated debit/credit values.
@@ -7,7 +9,6 @@
  */
 interface TradeDetailType {
   id: number;
-  item_id?: number;
   model_type: string;
   sku?: string;
   name?: string;
@@ -18,6 +19,8 @@ interface TradeDetailType {
   debit: number;
   credit: number;
   notes?: string;
+  /** Item info - only populated when detail_type is 'ITM' */
+  item?: ItemInfo;
 }
 
 export type { TradeDetailType };

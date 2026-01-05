@@ -30,7 +30,12 @@ function defineTradeController(service: TradeService) {
   });
 
   app.openapi(createTradeRoute, async (c) => {
-    const data = c.req.valid("json");
+    const body = c.req.valid("json");
+    const payload = c.get("jwtPayload");
+    const data = {
+      ...body,
+      sender_id: parseInt(payload.sub),
+    };
     const result = await service.create(data);
     return c.json(result, 201);
   });

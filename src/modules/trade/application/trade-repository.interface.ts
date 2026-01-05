@@ -30,6 +30,7 @@ type GetManyTradesReturn = {
 type GetOneTradeProps = {
   id: number;
   withDetails?: boolean;
+  withPlayers?: boolean;
 };
 
 /**

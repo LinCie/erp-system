@@ -1,4 +1,5 @@
 import { createRoute } from "@hono/zod-openapi";
+import { getOneTradeQuerySchema } from "../validators/get-one-trade-query.validator.ts";
 import { tradeIdParamSchema } from "../validators/trade-id-param.validator.ts";
 import { tradeResponseSchema } from "../schemas/trade-response.schema.ts";
 import {
@@ -14,6 +15,7 @@ const getOneTradeRoute = createRoute({
   security: [{ Bearer: [] }],
   request: {
     params: tradeIdParamSchema,
+    query: getOneTradeQuerySchema,
   },
   responses: {
     200: {
