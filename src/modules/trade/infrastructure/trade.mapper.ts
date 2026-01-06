@@ -92,20 +92,13 @@ class TradeMapper {
 
   // Insertable schema for database
   private insertableSchema = z.object({
-    number: z.string().nullable(),
-    space_type: z.string(),
     space_id: z.number(),
-    model_type: z.string(),
-    sender_type: z.string(),
     sender_id: z.number().nullable(),
     sent_time: z.date().nullable(),
     sender_notes: z.string().nullable(),
+    number: z.string().nullable(),
     status: z.string(),
     total: z.string(),
-    fee: z.union([z.string(), z.number()]).optional(),
-    files: z.string().nullable(),
-    tags: z.string().nullable(),
-    links: z.string().nullable(),
   });
 
   // Updateable schema for database
@@ -154,20 +147,13 @@ class TradeMapper {
     entity: Partial<TradeEntity> & { space_id: number; sender_id: number },
   ): Insertable<Transactions> {
     const data = {
-      number: entity.number ?? null,
-      space_type: "SPACE",
       space_id: entity.space_id,
-      model_type: "TRD",
-      sender_type: "PLAY",
       sender_id: entity.sender_id ?? null,
       sent_time: entity.sent_time ?? null,
       sender_notes: entity.sender_notes ?? null,
+      number: entity.number ?? null,
       status: entity.status ?? "TX_DRAFT",
       total: entity.total ?? "0",
-      fee: entity.fee ?? undefined,
-      files: entity.files ? JSON.stringify(entity.files) : null,
-      tags: entity.tags ? JSON.stringify(entity.tags) : null,
-      links: entity.links ? JSON.stringify(entity.links) : null,
     };
     return this.insertableSchema.parse(data);
   }
