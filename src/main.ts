@@ -1,9 +1,11 @@
 import "@/shared/infrastructure/logging/index.ts";
 
+import * as Sentry from "@sentry/node";
 import { logger } from "hono/logger";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { swaggerUI } from "@hono/swagger-ui";
 import { createAuthModule } from "./modules/auth/presentation/auth.module.ts";
+import { contactController } from "./modules/contact/presentation/contact.module.ts";
 import { inventoryController } from "./modules/inventory/presentation/inventory.module.ts";
 import { itemController } from "./modules/item/presentation/item.module.ts";
 import { spaceController } from "./modules/space/presentation/space.module.ts";
@@ -27,6 +29,7 @@ async function main() {
   app.route("/inventories", inventoryController);
   app.route("/spaces", spaceController);
   app.route("/trades", tradeController);
+  app.route("/contacts", contactController);
 
   // OpenAPI JSON spec endpoint
   app.doc("/doc", {
