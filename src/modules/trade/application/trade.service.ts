@@ -1,9 +1,12 @@
 import type {
   CreateTradeData,
+  CreateTradeDetailData,
   GetManyTradesProps,
   GetOneTradeProps,
   ITradeRepository,
   UpdateTradeData,
+  UpdateTradeDetailData,
+  UpdateTradeTransactionData,
 } from "./trade-repository.interface.ts";
 
 /**
@@ -31,6 +34,27 @@ class TradeService {
 
   async delete(id: number) {
     return await this.tradeRepository.delete(id);
+  }
+
+  // New methods for trade transaction and detail separation
+  async updateTransaction(id: number, data: UpdateTradeTransactionData) {
+    return await this.tradeRepository.updateTransaction(id, data);
+  }
+
+  async createDetail(tradeId: number, data: CreateTradeDetailData) {
+    return await this.tradeRepository.createDetail(tradeId, data);
+  }
+
+  async updateDetail(
+    tradeId: number,
+    detailId: number,
+    data: UpdateTradeDetailData,
+  ) {
+    return await this.tradeRepository.updateDetail(tradeId, detailId, data);
+  }
+
+  async deleteDetail(tradeId: number, detailId: number) {
+    return await this.tradeRepository.deleteDetail(tradeId, detailId);
   }
 }
 

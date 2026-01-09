@@ -48,12 +48,12 @@ class TradeMapper {
     model_type: z.string(),
     sku: z.string().optional(),
     name: z.string().optional(),
-    quantity: z.number(),
-    price: z.number(),
-    discount: z.number(),
-    weight: z.number(),
-    debit: z.number(),
-    credit: z.number(),
+    quantity: z.coerce.number(),
+    price: z.coerce.number(),
+    discount: z.coerce.number(),
+    weight: z.coerce.number(),
+    debit: z.coerce.number(),
+    credit: z.coerce.number(),
     notes: z.string().optional(),
     item: this.itemInfoSchema.optional(),
   });
@@ -124,6 +124,7 @@ class TradeMapper {
   });
 
   // Detail insertable schema
+  // Note: Decimal fields are coerced to numbers for database insertion
   private detailInsertableSchema = z.object({
     transaction_id: z.number(),
     detail_type: z.string(),
@@ -131,12 +132,12 @@ class TradeMapper {
     model_type: z.string(),
     sku: z.string().nullable(),
     name: z.string().nullable(),
-    quantity: z.number(),
-    price: z.number(),
-    discount: z.number().nullable(),
-    weight: z.number().nullable(),
-    debit: z.number(),
-    credit: z.number(),
+    quantity: z.coerce.number(),
+    price: z.coerce.number(),
+    discount: z.coerce.number().nullable(),
+    weight: z.coerce.number().nullable(),
+    debit: z.coerce.number(),
+    credit: z.coerce.number(),
     notes: z.string().nullable(),
   });
 
@@ -162,6 +163,15 @@ class TradeMapper {
    * Transform partial trade entity to updateable database row
    */
   toUpdateable(entity: Partial<TradeEntity>): Updateable<Transactions> {
+    return this.toTransactionUpdateable(entity);
+  }
+
+  /**
+   * Transform partial trade entity to updateable database row (transaction only, no details)
+   */
+  toTransactionUpdateable(
+    entity: Partial<TradeEntity>,
+  ): Updateable<Transactions> {
     const data: Record<string, unknown> = {};
 
     if (entity.handler_id !== undefined) {
@@ -348,8 +358,8 @@ class TradeMapper {
   ): Insertable<TransactionDetails> {
     // Calculate debit and credit based on quantity
     const quantity = detail.quantity;
-    const debit = quantity >= 0 ? detail.quantity : "0";
-    const credit = quantity < 0 ? Math.abs(quantity).toString() : "0";
+    const debit = quantity >= 0 ? quantity : 0;
+    const credit = quantity < 0 ? Math.abs(quantity) : 0;
 
     const data = {
       transaction_id: transactionId,
@@ -360,14 +370,55 @@ class TradeMapper {
       name: detail.name ?? null,
       quantity: detail.quantity,
       price: detail.price,
-      discount: detail.discount ?? "0",
-      weight: detail.weight ?? "0",
+      discount: detail.discount ?? 0,
+      weight: detail.weight ?? 0,
       debit,
       credit,
       notes: detail.notes ?? null,
     };
 
     return this.detailInsertableSchema.parse(data);
+  }
+
+  /**
+   * Transform partial detail data to updateable database row
+   * Excludes immutable linking fields (transaction_id, detail_type, detail_id)
+   */
+  detailToUpdateable(
+    detail: Partial<Omit<TradeDetailInput, "item_id">>,
+  ): Updateable<TransactionDetails> {
+    const data: Record<string, unknown> = {};
+
+    if (detail.model_type !== undefined) {
+      data.model_type = detail.model_type;
+    }
+    if (detail.sku !== undefined) {
+      data.sku = detail.sku ?? null;
+    }
+    if (detail.name !== undefined) {
+      data.name = detail.name ?? null;
+    }
+    if (detail.quantity !== undefined) {
+      data.quantity = detail.quantity;
+      // Recalculate debit/credit when quantity changes
+      const quantity = detail.quantity;
+      data.debit = quantity >= 0 ? quantity : 0;
+      data.credit = quantity < 0 ? Math.abs(quantity) : 0;
+    }
+    if (detail.price !== undefined) {
+      data.price = detail.price;
+    }
+    if (detail.discount !== undefined) {
+      data.discount = detail.discount ?? null;
+    }
+    if (detail.weight !== undefined) {
+      data.weight = detail.weight ?? null;
+    }
+    if (detail.notes !== undefined) {
+      data.notes = detail.notes ?? null;
+    }
+
+    return data as Updateable<TransactionDetails>;
   }
 
   /**

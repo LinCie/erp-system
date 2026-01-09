@@ -2,6 +2,7 @@ import type { GetManyPropsType } from "@/shared/application/types/get-all.type.t
 import type { GetManyMetadataType } from "@/shared/application/types/get-many-metadata.type.ts";
 import type { TradeEntity } from "../domain/trade.entity.ts";
 import type { TradeStatusType } from "../domain/trade-status.type.ts";
+import type { TradeDetailType } from "../domain/trade-detail.type.ts";
 
 /**
  * Props for getMany operation
@@ -80,6 +81,23 @@ type UpdateTradeData = {
 };
 
 /**
+ * Data for updating trade transaction only (without details)
+ */
+type UpdateTradeTransactionData = Omit<UpdateTradeData, "details">;
+
+/**
+ * Data for creating a trade detail
+ */
+type CreateTradeDetailData = TradeDetailInput;
+
+/**
+ * Data for updating a trade detail (excludes immutable linking fields)
+ */
+type UpdateTradeDetailData = Partial<
+  Omit<TradeDetailInput, "item_id">
+>;
+
+/**
  * Repository interface for trade data access operations
  */
 interface ITradeRepository {
@@ -88,14 +106,32 @@ interface ITradeRepository {
   create(data: CreateTradeData): Promise<TradeEntity>;
   update(id: number, data: UpdateTradeData): Promise<TradeEntity>;
   delete(id: number): Promise<void>;
+  // New methods for trade transaction and detail separation
+  updateTransaction(
+    id: number,
+    data: UpdateTradeTransactionData,
+  ): Promise<TradeEntity>;
+  createDetail(
+    tradeId: number,
+    data: CreateTradeDetailData,
+  ): Promise<TradeDetailType>;
+  updateDetail(
+    tradeId: number,
+    detailId: number,
+    data: UpdateTradeDetailData,
+  ): Promise<TradeDetailType>;
+  deleteDetail(tradeId: number, detailId: number): Promise<void>;
 }
 
 export type {
   CreateTradeData,
+  CreateTradeDetailData,
   GetManyTradesProps,
   GetManyTradesReturn,
   GetOneTradeProps,
   ITradeRepository,
   TradeDetailInput,
   UpdateTradeData,
+  UpdateTradeDetailData,
+  UpdateTradeTransactionData,
 };

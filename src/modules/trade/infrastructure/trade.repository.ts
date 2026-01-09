@@ -1,10 +1,14 @@
 import type { TradeEntity as Trade } from "../domain/trade.entity.ts";
+import type { TradeDetailType } from "../domain/trade-detail.type.ts";
 import type {
   CreateTradeData,
+  CreateTradeDetailData,
   GetManyTradesProps,
   GetOneTradeProps,
   ITradeRepository,
   UpdateTradeData,
+  UpdateTradeDetailData,
+  UpdateTradeTransactionData,
 } from "../application/trade-repository.interface.ts";
 
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/mysql";
@@ -371,61 +375,248 @@ class TradeRepository implements ITradeRepository {
       throw new Error("TRADE_NOT_FOUND");
     }
 
-    // Extract details from data for separate handling
-    const { details, ...tradeData } = data;
+    const { details, ...transactionData } = data;
 
-    // Handle details if provided
-    let total: string | undefined;
-    if (details !== undefined) {
-      // Soft-delete existing details
+    // Update transaction fields
+    if (Object.keys(transactionData).length > 0) {
+      const updateable = this.mapper.toUpdateable(transactionData);
+      await this.db
+        .updateTable("transactions")
+        .set({ ...updateable, updated_at: new Date() })
+        .where("id", "=", id)
+        .executeTakeFirst();
+    }
+
+    // Update details if provided
+    if (details && details.length > 0) {
+      // Delete existing details
       await this.db
         .updateTable("transaction_details")
-        .set({
-          deleted_at: new Date(),
-          updated_at: new Date(),
-        })
+        .set({ deleted_at: new Date(), updated_at: new Date() })
         .where("transaction_id", "=", id)
         .where("deleted_at", "is", null)
         .executeTakeFirst();
 
-      // Create new details and calculate total
-      let totalSum = 0;
-
+      // Insert new details
       for (const detail of details) {
-        const detailInsertable = this.mapper.detailToInsertable(id, detail);
-
+        const insertableDetail = this.mapper.detailToInsertable(id, detail);
         await this.db
           .insertInto("transaction_details")
           .values({
-            ...detailInsertable,
+            ...insertableDetail,
             created_at: new Date(),
             updated_at: new Date(),
           })
           .executeTakeFirst();
-
-        // Calculate total: quantity * price * (1 - discount)
-        const quantity = detail.quantity;
-        const price = detail.price;
-        const discount = detail.discount ?? 0;
-        totalSum += quantity * price * (1 - discount);
       }
-
-      total = totalSum.toFixed(2);
     }
 
-    // Update trade record
-    const updateable = this.mapper.toUpdateable({ ...tradeData, total });
+    return this.getOne({ id, withDetails: true });
+  }
 
+  async updateTransaction(
+    id: number,
+    data: UpdateTradeTransactionData,
+  ): Promise<Trade> {
+    // Verify trade exists
+    const existingTrade = await this.db
+      .selectFrom("transactions")
+      .where("id", "=", id)
+      .where("model_type", "=", "TRD")
+      .where("deleted_at", "is", null)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!existingTrade) {
+      throw new Error("TRADE_NOT_FOUND");
+    }
+
+    // Update transaction fields only (no details)
+    const updateable = this.mapper.toTransactionUpdateable(data);
     await this.db
       .updateTable("transactions")
-      .set({
-        ...updateable,
-        updated_at: new Date(),
-      })
+      .set({ ...updateable, updated_at: new Date() })
       .where("id", "=", id)
       .executeTakeFirst();
 
     return this.getOne({ id, withDetails: true });
+  }
+
+  async createDetail(
+    tradeId: number,
+    data: CreateTradeDetailData,
+  ): Promise<TradeDetailType> {
+    // Verify trade exists
+    const existingTrade = await this.db
+      .selectFrom("transactions")
+      .where("id", "=", tradeId)
+      .where("model_type", "=", "TRD")
+      .where("deleted_at", "is", null)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!existingTrade) {
+      throw new Error("TRADE_NOT_FOUND");
+    }
+
+    // Verify item exists
+    const existingItem = await this.db
+      .selectFrom("items")
+      .where("id", "=", data.item_id)
+      .where("deleted_at", "is", null)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!existingItem) {
+      throw new Error("ITEM_NOT_FOUND");
+    }
+
+    // Create detail with detail_type='ITM' and detail_id=item_id
+    const insertable = this.mapper.detailToInsertable(tradeId, data);
+    const created = await this.db
+      .insertInto("transaction_details")
+      .values({
+        ...insertable,
+        created_at: new Date(),
+        updated_at: new Date(),
+      })
+      .executeTakeFirst();
+
+    if (!created.insertId) {
+      throw new Error("TRADE_DETAIL_NOT_CREATED");
+    }
+
+    const detailId = safeBigintToNumber(created.insertId);
+
+    // Fetch and return the created detail with item info
+    const detail = await this.db
+      .selectFrom("transaction_details")
+      .where("id", "=", detailId)
+      .select((eb) => [
+        "transaction_details.id",
+        "transaction_details.detail_id",
+        "transaction_details.detail_type",
+        "transaction_details.model_type",
+        "transaction_details.sku",
+        "transaction_details.name",
+        "transaction_details.quantity",
+        "transaction_details.price",
+        "transaction_details.discount",
+        "transaction_details.weight",
+        "transaction_details.debit",
+        "transaction_details.credit",
+        "transaction_details.notes",
+        jsonObjectFrom(
+          eb.selectFrom("items")
+            .whereRef("items.id", "=", "transaction_details.detail_id")
+            .where("transaction_details.detail_type", "=", "ITM")
+            .select([
+              "items.id",
+              "items.name",
+              "items.sku",
+              "items.cost",
+              "items.price",
+            ]),
+        ).as("item"),
+      ])
+      .executeTakeFirst();
+
+    if (!detail) {
+      throw new Error("TRADE_DETAIL_NOT_FOUND");
+    }
+
+    return this.mapper.detailToEntity(detail);
+  }
+
+  async updateDetail(
+    tradeId: number,
+    detailId: number,
+    data: UpdateTradeDetailData,
+  ): Promise<TradeDetailType> {
+    // Verify detail exists and belongs to trade
+    const existingDetail = await this.db
+      .selectFrom("transaction_details")
+      .where("id", "=", detailId)
+      .where("transaction_id", "=", tradeId)
+      .where("deleted_at", "is", null)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!existingDetail) {
+      throw new Error("TRADE_DETAIL_NOT_FOUND");
+    }
+
+    // Update detail (excluding immutable linking fields)
+    const updateable = this.mapper.detailToUpdateable(data);
+    await this.db
+      .updateTable("transaction_details")
+      .set({ ...updateable, updated_at: new Date() })
+      .where("id", "=", detailId)
+      .executeTakeFirst();
+
+    // Fetch and return the updated detail with item info
+    const detail = await this.db
+      .selectFrom("transaction_details")
+      .where("id", "=", detailId)
+      .select((eb) => [
+        "transaction_details.id",
+        "transaction_details.detail_id",
+        "transaction_details.detail_type",
+        "transaction_details.model_type",
+        "transaction_details.sku",
+        "transaction_details.name",
+        "transaction_details.quantity",
+        "transaction_details.price",
+        "transaction_details.discount",
+        "transaction_details.weight",
+        "transaction_details.debit",
+        "transaction_details.credit",
+        "transaction_details.notes",
+        jsonObjectFrom(
+          eb.selectFrom("items")
+            .whereRef("items.id", "=", "transaction_details.detail_id")
+            .where("transaction_details.detail_type", "=", "ITM")
+            .select([
+              "items.id",
+              "items.name",
+              "items.sku",
+              "items.cost",
+              "items.price",
+            ]),
+        ).as("item"),
+      ])
+      .executeTakeFirst();
+
+    if (!detail) {
+      throw new Error("TRADE_DETAIL_NOT_FOUND");
+    }
+
+    return this.mapper.detailToEntity(detail);
+  }
+
+  async deleteDetail(tradeId: number, detailId: number): Promise<void> {
+    // Verify detail exists and belongs to trade
+    const existingDetail = await this.db
+      .selectFrom("transaction_details")
+      .where("id", "=", detailId)
+      .where("transaction_id", "=", tradeId)
+      .where("deleted_at", "is", null)
+      .select("id")
+      .executeTakeFirst();
+
+    if (!existingDetail) {
+      throw new Error("TRADE_DETAIL_NOT_FOUND");
+    }
+
+    // Soft-delete detail
+    await this.db
+      .updateTable("transaction_details")
+      .set({
+        deleted_at: new Date(),
+        updated_at: new Date(),
+      })
+      .where("id", "=", detailId)
+      .executeTakeFirst();
   }
 
   async delete(id: number): Promise<void> {
