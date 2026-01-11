@@ -4,12 +4,25 @@ services:
     ports:
       - "${PORT:-8000}:8000"
     depends_on:
-      - redis
+      redis:
+        condition: service_started
+      migrations:
+        condition: service_completed_successfully
     env_file:
       - path: .env.production
         required: false
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    network_mode: host
+
+  migrations:
+    build: .
+    env_file:
+      - path: .env.production
+        required: false
+    command: deno task db:migrate
+    network_mode: host
+    restart: "no"
 
   redis:
     image: redis:alpine
