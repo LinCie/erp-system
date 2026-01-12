@@ -1,10 +1,14 @@
 # AGENTS.md
 
-This file provides comprehensive guidance for AI assistants working on the ERP System codebase.
+This file provides comprehensive guidance for AI assistants working on the ERP
+System codebase.
 
 ## Project Overview
 
-This is a modular ERP system built with **Deno** and **TypeScript**, following Clean Architecture principles. The system manages resources like items, inventories, spaces, trades, and contacts, with AI-powered features for natural language item queries.
+This is a modular ERP system built with **Deno** and **TypeScript**, following
+Clean Architecture principles. The system manages resources like items,
+inventories, spaces, trades, and contacts, with AI-powered features for natural
+language item queries.
 
 ### Tech Stack
 
@@ -30,7 +34,8 @@ deno task create:module  # Scaffold a new module
 
 ## Architecture Pattern
 
-The codebase follows **Clean Architecture** with **Domain-Driven Design** principles, organized into four distinct layers:
+The codebase follows **Clean Architecture** with **Domain-Driven Design**
+principles, organized into four distinct layers:
 
 ### Layer Structure (Top → Bottom)
 
@@ -46,11 +51,14 @@ Domain (Core Business Entities)
 
 ### Dependency Rule
 
-**Dependencies always point inward** - Presentation depends on Application, Application depends on Domain, Infrastructure implements Domain interfaces. This ensures the core business logic remains independent of external concerns.
+**Dependencies always point inward** - Presentation depends on Application,
+Application depends on Domain, Infrastructure implements Domain interfaces. This
+ensures the core business logic remains independent of external concerns.
 
 ### Layer Responsibilities
 
 #### 1. Domain Layer (`src/modules/*/domain/`)
+
 - **Purpose**: Core business entities and types
 - **Contains**:
   - Entity interfaces/types (e.g., `user.entity.ts`)
@@ -62,6 +70,7 @@ Domain (Core Business Entities)
   - No business logic implementation
 
 #### 2. Application Layer (`src/modules/*/application/`)
+
 - **Purpose**: Business logic and use cases
 - **Contains**:
   - Service classes (e.g., `auth.service.ts`)
@@ -73,6 +82,7 @@ Domain (Core Business Entities)
   - Defines contracts for infrastructure to implement
 
 #### 3. Infrastructure Layer (`src/modules/*/infrastructure/`)
+
 - **Purpose**: External system integrations
 - **Contains**:
   - Repository implementations (e.g., `auth.repository.ts`)
@@ -84,6 +94,7 @@ Domain (Core Business Entities)
   - Converts between domain entities and external formats
 
 #### 4. Presentation Layer (`src/modules/*/presentation/`)
+
 - **Purpose**: HTTP API endpoints and request/response handling
 - **Contains**:
   - Controllers (e.g., `auth.controller.ts`)
@@ -162,6 +173,7 @@ app.route("/auth", authController);
 ## Key Technologies & Libraries
 
 ### Hono + OpenAPI
+
 - **Purpose**: Web framework with automatic OpenAPI documentation
 - **Usage**: Define routes using `createRoute()` from `@hono/zod-openapi`
 - **Key Features**:
@@ -171,6 +183,7 @@ app.route("/auth", authController);
   - Bearer authentication support
 
 ### Kysely (Database ORM)
+
 - **Purpose**: Type-safe SQL query builder
 - **Database**: MySQL
 - **Usage**:
@@ -178,9 +191,11 @@ app.route("/auth", authController);
   - Access via singleton `getDatabase()` function
   - Repository pattern for all database operations
 
-**ALWAYS** check Kysely documentation via Context7 before writing database queries.
+**ALWAYS** check Kysely documentation via Context7 before writing database
+queries.
 
 ### Zod (Validation)
+
 - **Purpose**: Runtime type validation and OpenAPI schema generation
 - **Usage**:
   - Define request body validators in `validators/` directory
@@ -189,6 +204,7 @@ app.route("/auth", authController);
   - Export inferred types as TypeScript types
 
 **Example**:
+
 ```typescript
 import { z } from "@hono/zod-openapi";
 
@@ -206,22 +222,26 @@ export type { CreateContactBody };
 ```
 
 ### Redis (Caching)
+
 - **Purpose**: Caching layer for session management and data caching
 - **Usage**: Access via singleton `getRedis()` function
 - **Integration**: Used in auth repositories for token management
 
 ### AWS S3 (Storage)
+
 - **Purpose**: File storage for uploads
 - **Usage**: Presigned URLs for secure uploads/downloads
 - **Service**: Located in `src/shared/infrastructure/storage/`
 
 ### Google Gemini AI
+
 - **Purpose**: Natural language queries for item search
 - **Usage**: Function calling pattern to query items
 - **Implementation**: `ItemAiService` in item module
 - **Model**: gemini-2.5-flash-lite
 
 ### Sentry
+
 - **Purpose**: Error tracking and monitoring
 - **Usage**: Initialized in `src/main.ts`
 
@@ -229,11 +249,13 @@ export type { CreateContactBody };
 
 ### Context7 Usage - MANDATORY for Code Generation
 
-**ALWAYS** query Context7 for library documentation before generating any code involving external libraries.
+**ALWAYS** query Context7 for library documentation before generating any code
+involving external libraries.
 
 #### When to Use Context7
 
 Use Context7 when working with:
+
 - Hono (routes, middleware, OpenAPI)
 - Kysely (database queries, joins, transactions)
 - Zod (schemas, validation, refinements)
@@ -274,6 +296,7 @@ Use the sequential thinking MCP tool for complex, multi-step scenarios:
 #### When to Use Sequential Thinking
 
 Use when facing:
+
 - Complex architectural decisions
 - Multi-step refactoring tasks
 - Debugging difficult issues
@@ -295,64 +318,75 @@ Use when facing:
 ## Do's
 
 ### Architecture & Structure
-✅ **Follow the 4-layer architecture strictly** - never skip layers
-✅ **Use TypeScript interfaces and type exports** for all contracts
-✅ **Create Zod schemas with OpenAPI decorators** for all endpoints
-✅ **Use repository pattern** for all data access operations
-✅ **Implement proper dependency injection** in module initialization
-✅ **Write tests** in `__tests__` directories (see inventory module for examples)
-✅ **Use the `create-module` script** for scaffolding new modules: `deno task create:module`
+
+✅ **Follow the 4-layer architecture strictly** - never skip layers ✅ **Use
+TypeScript interfaces and type exports** for all contracts ✅ **Create Zod
+schemas with OpenAPI decorators** for all endpoints ✅ **Use repository
+pattern** for all data access operations ✅ **Implement proper dependency
+injection** in module initialization ✅ **Write tests** in `__tests__`
+directories (see inventory module for examples) ✅ **Use the `create-module`
+script** for scaffolding new modules: `deno task create:module`
 
 ### Code Quality
-✅ **Always consult Context7** before generating code with external libraries
-✅ **Use sequential thinking** for complex architectural decisions or debugging
-✅ **Export all types** that might be used by other modules
-✅ **Add OpenAPI examples** to all Zod schemas
-✅ **Use proper error handling** with custom error types
-✅ **Follow existing naming conventions** (kebab-case for files, PascalCase for classes)
-✅ **Add proper JSDoc comments** to complex functions
+
+✅ **Always consult Context7** before generating code with external libraries ✅
+**Use sequential thinking** for complex architectural decisions or debugging ✅
+**Export all types** that might be used by other modules ✅ **Add OpenAPI
+examples** to all Zod schemas ✅ **Use proper error handling** with custom error
+types ✅ **Follow existing naming conventions** (kebab-case for files,
+PascalCase for classes) ✅ **Add proper JSDoc comments** to complex functions
 
 ### Database Operations
-✅ **Use Kysely query builder** - no raw SQL
-✅ **Define database types** in `database.d.ts` and keep them updated
-✅ **Use transactions** for multi-step operations
-✅ **Implement proper mapping** between domain entities and database rows
+
+✅ **Use Kysely query builder** - no raw SQL ✅ **Define database types** in
+`database.d.ts` and keep them updated ✅ **Use transactions** for multi-step
+operations ✅ **Implement proper mapping** between domain entities and database
+rows
 
 ### API Design
-✅ **Define routes in separate files** under `routes/` directory
-✅ **Group endpoints by resource** (e.g., `/items`, `/inventories`)
-✅ **Use HTTP verbs correctly** (GET, POST, PUT, DELETE)
-✅ **Return proper status codes** (201 for created, 200 for success, 400 for errors)
-✅ **Include error response schemas** for all endpoints that can fail
+
+✅ **Define routes in separate files** under `routes/` directory ✅ **Group
+endpoints by resource** (e.g., `/items`, `/inventories`) ✅ **Use HTTP verbs
+correctly** (GET, POST, PUT, DELETE) ✅ **Return proper status codes** (201 for
+created, 200 for success, 400 for errors) ✅ **Include error response schemas**
+for all endpoints that can fail
 
 ## Don'ts
 
 ### Architecture & Structure
+
 ❌ **Don't mix concerns across layers** - each layer has a single responsibility
-❌ **Don't skip the repository abstraction** - never call `getDatabase()` from controllers or services directly
-❌ **Don't put business logic in controllers** - delegates to services only
-❌ **Don't use inline types** - create proper type definitions and export them
-❌ **Don't bypass the service layer** - controllers shouldn't contain business rules
-❌ **Don't use direct database queries outside repositories** - all DB access goes through repositories
+❌ **Don't skip the repository abstraction** - never call `getDatabase()` from
+controllers or services directly ❌ **Don't put business logic in
+controllers** - delegates to services only ❌ **Don't use inline types** -
+create proper type definitions and export them ❌ **Don't bypass the service
+layer** - controllers shouldn't contain business rules ❌ **Don't use direct
+database queries outside repositories** - all DB access goes through
+repositories
 
 ### Code Quality
-❌ **Don't generate code without checking Context7 documentation first** - this is mandatory
-❌ **Don't skip systematic thinking for complex problems** - use sequential thinking tool
-❌ **Don't forget to export types** - if a type is defined, it should be exported
-❌ **Don't use `any` type** - use proper TypeScript types
-❌ **Don't duplicate code** - extract common patterns to shared utilities
+
+❌ **Don't generate code without checking Context7 documentation first** - this
+is mandatory ❌ **Don't skip systematic thinking for complex problems** - use
+sequential thinking tool ❌ **Don't forget to export types** - if a type is
+defined, it should be exported ❌ **Don't use `any` type** - use proper
+TypeScript types ❌ **Don't duplicate code** - extract common patterns to shared
+utilities
 
 ### API Design
-❌ **Don't create endpoints without OpenAPI documentation** - use `createRoute()` and `.openapi()`
-❌ **Don't skip request validation** - always define Zod schemas for request bodies and parameters
-❌ **Don't return inconsistent response formats** - use proper response schemas
-❌ **Don't forget error handling** - all endpoints should handle errors gracefully
+
+❌ **Don't create endpoints without OpenAPI documentation** - use
+`createRoute()` and `.openapi()` ❌ **Don't skip request validation** - always
+define Zod schemas for request bodies and parameters ❌ **Don't return
+inconsistent response formats** - use proper response schemas ❌ **Don't forget
+error handling** - all endpoints should handle errors gracefully
 
 ### Security
-❌ **Don't expose sensitive data** in responses
-❌ **Don't skip authentication** - use `security: [{ Bearer: [] }]` for protected routes
-❌ **Don't store passwords in plain text** - use bcryptjs
-❌ **Don't ignore input validation** - trust but verify
+
+❌ **Don't expose sensitive data** in responses ❌ **Don't skip
+authentication** - use `security: [{ Bearer: [] }]` for protected routes ❌
+**Don't store passwords in plain text** - use bcryptjs ❌ **Don't ignore input
+validation** - trust but verify
 
 ## Code Patterns & Examples
 
@@ -371,31 +405,31 @@ const createContactRoute = createRoute({
   tags: ["Contacts"],
   summary: "Create a new contact",
   security: [{ Bearer: [] }],
-  request: { 
-    body: { 
-      content: { 
-        "application/json": { 
-          schema: createContactBodySchema 
-        } 
-      } 
-    } 
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: createContactBodySchema,
+        },
+      },
+    },
   },
   responses: {
-    201: { 
-      content: { 
-        "application/json": { 
-          schema: contactResponseSchema 
-        } 
-      }, 
-      description: "Contact created successfully" 
+    201: {
+      content: {
+        "application/json": {
+          schema: contactResponseSchema,
+        },
+      },
+      description: "Contact created successfully",
     },
-    400: { 
-      content: { 
-        "application/json": { 
-          schema: errorResponseSchema 
-        } 
-      }, 
-      description: "Validation error" 
+    400: {
+      content: {
+        "application/json": {
+          schema: errorResponseSchema,
+        },
+      },
+      description: "Validation error",
     },
   },
 });
@@ -411,13 +445,13 @@ import { z } from "@hono/zod-openapi";
 
 const createContactBodySchema = z
   .object({
-    name: z.string().min(1).openapi({ 
+    name: z.string().min(1).openapi({
       example: "My Contact",
-      description: "The contact's name" 
+      description: "The contact's name",
     }),
-    status: z.enum(["active", "inactive"]).openapi({ 
+    status: z.enum(["active", "inactive"]).openapi({
       example: "active",
-      description: "The contact's status" 
+      description: "The contact's status",
     }),
   })
   .openapi("CreateContactBody");
@@ -440,7 +474,11 @@ import { MapperError } from "@/shared/domain/errors/mapper.error.ts";
 class AuthRepository implements AuthRepositoryInterface {
   constructor(
     private readonly db: PersistenceType,
-    private readonly redis: Awaited<ReturnType<typeof import("@/shared/infrastructure/caching/index.ts").getRedis>>,
+    private readonly redis: Awaited<
+      ReturnType<
+        typeof import("@/shared/infrastructure/caching/index.ts").getRedis
+      >
+    >,
   ) {}
 
   async findByEmail(email: string): Promise<UserEntity | undefined> {
@@ -457,7 +495,9 @@ class AuthRepository implements AuthRepositoryInterface {
     }
   }
 
-  async create(user: Omit<UserEntity, "id" | "created_at" | "updated_at" | "deleted_at">): Promise<UserEntity> {
+  async create(
+    user: Omit<UserEntity, "id" | "created_at" | "updated_at" | "deleted_at">,
+  ): Promise<UserEntity> {
     const result = await this.db
       .insertInto("users")
       .values(user)
@@ -491,7 +531,11 @@ class AuthService {
     private readonly authSecurity: AuthSecurityInterface,
   ) {}
 
-  async signup(name: string, email: string, password: string): Promise<UserEntity> {
+  async signup(
+    name: string,
+    email: string,
+    password: string,
+  ): Promise<UserEntity> {
     // Check if user exists
     const existingUser = await this.authRepo.findByEmail(email);
     if (existingUser) {
@@ -512,7 +556,10 @@ class AuthService {
     return user;
   }
 
-  async signin(email: string, password: string): Promise<{ accessToken: string; refreshToken: string }> {
+  async signin(
+    email: string,
+    password: string,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     // Find user
     const user = await this.authRepo.findByEmail(email);
     if (!user) {
@@ -554,7 +601,7 @@ export type { UserEntity };
 
 ```typescript
 // src/modules/contact/presentation/contact.controller.ts
-import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { createContactRoute } from "./routes/create-contact.route.ts";
 import { deleteContactRoute } from "./routes/delete-contact.route.ts";
 import { getManyContactsRoute } from "./routes/get-many-contacts.route.ts";
@@ -628,31 +675,31 @@ This will create the complete module structure with all necessary files.
      tags: ["ModuleName"],
      summary: "Custom endpoint description",
      security: [{ Bearer: [] }],
-     request: { 
-       body: { 
-         content: { 
-           "application/json": { 
-             schema: z.object({ /* fields */ }) 
-           } 
-         } 
-       } 
+     request: {
+       body: {
+         content: {
+           "application/json": {
+             schema: z.object({/* fields */}),
+           },
+         },
+       },
      },
      responses: {
-       200: { 
-         content: { 
-           "application/json": { 
-             schema: responseSchema 
-           } 
-         }, 
-         description: "Success" 
+       200: {
+         content: {
+           "application/json": {
+             schema: responseSchema,
+           },
+         },
+         description: "Success",
        },
-       400: { 
-         content: { 
-           "application/json": { 
-             schema: errorResponseSchema 
-           } 
-         }, 
-         description: "Error" 
+       400: {
+         content: {
+           "application/json": {
+             schema: errorResponseSchema,
+           },
+         },
+         description: "Error",
        },
      },
    });
@@ -694,19 +741,22 @@ After modifying the database schema:
 deno task db:generate
 ```
 
-This updates `src/shared/infrastructure/persistence/database.d.ts` with the latest schema types.
+This updates `src/shared/infrastructure/persistence/database.d.ts` with the
+latest schema types.
 
 ## Troubleshooting & Best Practices
 
 ### When to Use Context7 vs. Sequential Thinking
 
 **Use Context7 when:**
+
 - Working with external libraries (Hono, Kysely, Zod, etc.)
 - Need specific API usage examples
 - Writing new code that involves library-specific patterns
 - Unsure about the correct API methods or parameters
 
 **Use Sequential Thinking when:**
+
 - Designing complex architectural solutions
 - Debugging multi-layer issues
 - Planning database schema changes
@@ -728,7 +778,8 @@ This updates `src/shared/infrastructure/persistence/database.d.ts` with the late
 
 1. **Use Sequential Thinking** to break down the problem
 2. **Check Context7** for library-specific patterns
-3. **Verify layer separation** - ensure each layer's responsibilities are respected
+3. **Verify layer separation** - ensure each layer's responsibilities are
+   respected
 4. **Review similar implementations** in existing modules
 5. **Check database types** - ensure they match your queries
 6. **Test endpoints** using Swagger UI at `/swagger`
@@ -754,4 +805,7 @@ This updates `src/shared/infrastructure/persistence/database.d.ts` with the late
 
 ---
 
-**Remember**: This codebase values clean architecture, type safety, and proper separation of concerns. When in doubt, consult existing modules for patterns, use Context7 for library specifics, and use Sequential Thinking for complex problems.
+**Remember**: This codebase values clean architecture, type safety, and proper
+separation of concerns. When in doubt, consult existing modules for patterns,
+use Context7 for library specifics, and use Sequential Thinking for complex
+problems.
