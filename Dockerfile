@@ -15,7 +15,6 @@ WORKDIR /app
 
 COPY --from=builder /app/deno.json ./
 COPY --from=builder /app/deno.lock ./
-COPY --from=builder /app/.cache ./.cache
 COPY --from=builder /app/src ./src
 
 COPY scripts ./scripts
