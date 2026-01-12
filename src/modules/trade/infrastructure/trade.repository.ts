@@ -353,7 +353,7 @@ class TradeRepository implements ITradeRepository {
     if (!data.number) {
       await this.db
         .updateTable("transactions")
-        .set({ number: `TRD_${tradeId}` })
+        .set({ number: `TX_${tradeId}` })
         .where("id", "=", tradeId)
         .executeTakeFirst();
     }
