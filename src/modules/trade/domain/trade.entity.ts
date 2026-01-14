@@ -40,6 +40,8 @@ interface TradeEntity extends Omit<BaseEntity, "status"> {
   handler?: PlayerInfo;
   /** Computed: combined sender_notes and handler_notes */
   all_notes?: string;
+  /** Child trades (e.g. split trades) */
+  children?: TradeEntity[];
 }
 
 export type { TradeEntity };

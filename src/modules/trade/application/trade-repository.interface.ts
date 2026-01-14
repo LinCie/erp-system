@@ -32,6 +32,7 @@ type GetOneTradeProps = {
   id: number;
   withDetails?: boolean;
   withPlayers?: boolean;
+  withChildren?: boolean;
 };
 
 /**

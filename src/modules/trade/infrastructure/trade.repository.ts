@@ -219,7 +219,7 @@ class TradeRepository implements ITradeRepository {
   }
 
   async getOne(props: GetOneTradeProps): Promise<Trade> {
-    const { id, withDetails = false, withPlayers = false } = props;
+    const { id, withDetails = false, withPlayers = false, withChildren = false } = props;
 
     let query = this.db
       .selectFrom("transactions")
@@ -250,6 +250,41 @@ class TradeRepository implements ITradeRepository {
         "updated_at",
         "deleted_at",
       ]);
+
+    // Include children if requested
+    if (withChildren) {
+      query = query.select((eb) => [
+        jsonArrayFrom(
+          eb.selectFrom("transactions as children")
+            .whereRef("children.parent_id", "=", "transactions.id")
+            .where("children.deleted_at", "is", null)
+            .select([
+              "children.id",
+              "children.number",
+              "children.space_id",
+              "children.status",
+              "children.total",
+              "children.fee",
+              "children.sent_time",
+              "children.received_time",
+              "children.sender_id",
+              "children.receiver_id",
+              "children.handler_id",
+              "children.parent_id",
+              "children.sender_notes",
+              "children.receiver_notes",
+              "children.handler_notes",
+              "children.description",
+              "children.files",
+              "children.tags",
+              "children.links",
+              "children.created_at",
+              "children.updated_at",
+              "children.deleted_at",
+            ])
+        ).as("children"),
+      ]);
+    }
 
     // Include details if requested
     if (withDetails) {

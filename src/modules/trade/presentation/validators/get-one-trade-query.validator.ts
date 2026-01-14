@@ -12,6 +12,11 @@ const getOneTradeQuerySchema = z
       .transform((v) => v === "true")
       .optional()
       .openapi({ example: "true" }),
+    withChildren: z
+      .string()
+      .transform((v) => v === "true")
+      .optional()
+      .openapi({ example: "true" }),
   })
   .openapi("GetOneTradeQuery");
 

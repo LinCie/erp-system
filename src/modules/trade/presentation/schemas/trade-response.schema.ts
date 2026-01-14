@@ -139,6 +139,17 @@ const tradeResponseSchema = z
         },
       ],
     }),
+    children: z.array(z.any()).optional().openapi({
+      example: [
+        {
+          id: 5,
+          number: "TRD_5_CHILD",
+          status: "TX_DRAFT",
+          total: "500.00",
+          space_id: 1,
+        },
+      ],
+    }),
     details: z.array(tradeDetailResponseSchema).optional().openapi({
       example: [
         {

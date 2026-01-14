@@ -64,7 +64,7 @@ class TradeMapper {
     number: z.string(),
     space_id: z.number(),
     status: z.union([z.string(), z.enum(TRADE_STATUS)]),
-    total: z.string(),
+    total: z.coerce.string(),
     sent_time: z.coerce.date().optional(),
     received_time: z.coerce.date().optional(),
     sender_id: z.number().optional(),
@@ -75,11 +75,12 @@ class TradeMapper {
     receiver_notes: z.string().optional(),
     handler_notes: z.string().optional(),
     description: z.string().optional(),
-    fee: z.string().optional(),
+    fee: z.coerce.string().optional(),
     files: z.array(this.fileSchema).optional(),
     tags: z.array(z.string()).optional(),
     links: z.array(this.linkSchema).optional(),
     details: z.array(this.detailEntitySchema).optional(),
+    children: z.array(z.any()).optional(),
     sender: this.playerInfoSchema.optional(),
     receiver: this.playerInfoSchema.optional(),
     handler: this.playerInfoSchema.optional(),
@@ -270,6 +271,14 @@ class TradeMapper {
       );
     }
 
+    // Transform children if present
+    let children: TradeEntity["children"];
+    if (Array.isArray(row.children) && row.children.length > 0) {
+      children = row.children.map((c: Record<string, unknown>) =>
+        this.toEntity(c)
+      );
+    }
+
     // Transform player relationships if present
     let sender: PlayerInfo | undefined;
     if (row.sender && typeof row.sender === "object") {
@@ -337,6 +346,7 @@ class TradeMapper {
       tags,
       links,
       details,
+      children,
       sender,
       receiver,
       handler,
