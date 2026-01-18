@@ -29,13 +29,8 @@ function defineTradeController(service: TradeService) {
 
   app.openapi(getOneTradeRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const { withDetails, withPlayers, withChildren } = c.req.valid("query");
-    const result = await service.getOne({ 
-      id, 
-      withDetails: withDetails ?? true, // Default to true if not specified, preserving existing behavior
-      withPlayers,
-      withChildren 
-    });
+    const query = c.req.valid("query");
+    const result = await service.getOne({ id, ...query });
     return c.json(result, 200);
   });
 

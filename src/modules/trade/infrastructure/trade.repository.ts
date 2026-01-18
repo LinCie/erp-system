@@ -219,7 +219,12 @@ class TradeRepository implements ITradeRepository {
   }
 
   async getOne(props: GetOneTradeProps): Promise<Trade> {
-    const { id, withDetails = false, withPlayers = false, withChildren = false } = props;
+    const {
+      id,
+      withDetails = false,
+      withPlayers = false,
+      withChildren = false,
+    } = props;
 
     let query = this.db
       .selectFrom("transactions")
@@ -281,7 +286,7 @@ class TradeRepository implements ITradeRepository {
               "children.created_at",
               "children.updated_at",
               "children.deleted_at",
-            ])
+            ]),
         ).as("children"),
       ]);
     }
