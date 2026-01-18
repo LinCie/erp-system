@@ -5,6 +5,8 @@ import { ContactEntity as Contact } from "../domain/contact.entity.ts";
 type GetManyContactsProps = GetManyPropsType & {
   spaceId: number;
   withFullDetails: boolean;
+  type?: string;
+  search?: string;
 };
 
 type GetManyContactsReturn = {

@@ -14,44 +14,119 @@ class ContactRepository implements IContactRepository {
   ) {}
 
   async getMany(props: GetManyContactsProps) {
-    const { page = 1, limit = 10, spaceId } = props;
+    const { page = 1, limit = 10, spaceId, type, search } = props;
 
     // Count query with relations join
-    const { total } = await this.db
-      .selectFrom("players")
-      .innerJoin("relations", (join) =>
-        join
-          .onRef("relations.model2_id", "=", "players.id")
-          .on("relations.model2_type", "=", "PLAY")
-          .on("relations.model1_type", "=", "SPACE")
-          .on("relations.model1_id", "=", spaceId)
-          .on("relations.deleted_at", "is", null))
-      .where("players.deleted_at", "is", null)
-      .select((eb) => eb.fn.count("players.id").as("total"))
-      .executeTakeFirstOrThrow();
-
-    const totalItems = parseInt(total.toString());
-    const totalPages = Math.ceil(totalItems / limit);
+    let countQuery = this.db
+      .selectFrom("players as p")
+      .where("p.space_id", "in", [spaceId])
+      .where("p.deleted_at", "is", null)
+      .select((eb) => eb.fn.count("p.id").as("total"));
 
     // Data query with relations join
-    const result = await this.db
-      .selectFrom("players")
-      .innerJoin("relations", (join) =>
-        join
-          .onRef("relations.model2_id", "=", "players.id")
-          .on("relations.model2_type", "=", "PLAY")
-          .on("relations.model1_type", "=", "SPACE")
-          .on("relations.model1_id", "=", spaceId)
-          .on("relations.deleted_at", "is", null))
-      .where("players.deleted_at", "is", null)
+    let query = this.db
+      .selectFrom("players as p")
+      .where("p.space_id", "in", [spaceId])
+      .where("p.deleted_at", "is", null)
       .select([
-        "players.id",
-        "players.name",
-        "players.email",
+        "p.id",
+        "p.name",
+        "p.email",
       ])
       .limit(limit)
-      .offset((page - 1) * limit)
-      .execute();
+      .offset((page - 1) * limit);
+
+    if (type) {
+      query = query.where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom("transactions as t")
+            .select("t.id")
+            .whereRef("t.receiver_id", "=", "p.id")
+            .where("t.receiver_type", "=", "PLAY")
+            .where((eb2) =>
+              eb2.exists(
+                eb2.selectFrom("transaction_details as td").select("td.id")
+                  .whereRef("td.transaction_id", "=", "t.id")
+                  .where("td.deleted_at", "is", null),
+              )
+            )
+            .where("t.deleted_at", "is", null),
+        )
+      );
+
+      countQuery = countQuery.where((eb) =>
+        eb.exists(
+          eb
+            .selectFrom("transactions as t")
+            .select("t.id")
+            .whereRef("t.receiver_id", "=", "p.id")
+            .where("t.receiver_type", "=", "PLAY")
+            .where((eb2) =>
+              eb2.exists(
+                eb2.selectFrom("transaction_details as td").select("td.id")
+                  .whereRef("td.transaction_id", "=", "t.id")
+                  .where("td.deleted_at", "is", null),
+              )
+            )
+            .where("t.deleted_at", "is", null),
+        )
+      );
+    } else {
+      query = query.where((eb) =>
+        eb.not(
+          eb.exists(
+            eb
+              .selectFrom("transactions as t")
+              .select("t.id")
+              .whereRef("t.receiver_id", "=", "p.id")
+              .where("t.receiver_type", "=", "PLAY")
+              .where("t.deleted_at", "is", null),
+          ),
+        )
+      );
+
+      countQuery = countQuery.where((eb) =>
+        eb.not(
+          eb.exists(
+            eb
+              .selectFrom("transactions as t")
+              .select("t.id")
+              .whereRef("t.receiver_id", "=", "p.id")
+              .where("t.receiver_type", "=", "PLAY")
+              .where("t.deleted_at", "is", null),
+          ),
+        )
+      );
+    }
+
+    if (search) {
+      const searchTerm = `%${search}%`;
+      countQuery = countQuery.where((eb) =>
+        eb.or([
+          eb("name", "like", searchTerm),
+          eb("code", "like", searchTerm),
+          eb("notes", "like", searchTerm),
+          eb("address", "like", searchTerm),
+        ])
+      );
+      query = query.where((eb) =>
+        eb.or([
+          eb("name", "like", searchTerm),
+          eb("code", "like", searchTerm),
+          eb("notes", "like", searchTerm),
+          eb("address", "like", searchTerm),
+        ])
+      );
+    }
+
+    const [result, countResult] = await Promise.all([
+      query.execute(),
+      countQuery.executeTakeFirst(),
+    ]);
+
+    const totalItems = safeBigintToNumber(countResult?.total ?? 0);
+    const totalPages = Math.ceil(totalItems / limit);
 
     return {
       data: result.map((row) => this.mapper.toEntity(row)),
