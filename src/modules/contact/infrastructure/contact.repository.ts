@@ -36,7 +36,7 @@ class ContactRepository implements IContactRepository {
       .limit(limit)
       .offset((page - 1) * limit);
 
-    if (type) {
+    if (type && type !== "all") {
       query = query.where((eb) =>
         eb.exists(
           eb
@@ -72,7 +72,7 @@ class ContactRepository implements IContactRepository {
             .where("t.deleted_at", "is", null),
         )
       );
-    } else {
+    } else if (!type) {
       query = query.where((eb) =>
         eb.not(
           eb.exists(

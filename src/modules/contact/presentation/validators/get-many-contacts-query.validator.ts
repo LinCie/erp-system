@@ -5,6 +5,7 @@ const getManyContactsQuerySchema = z
     status: z.enum(["active", "inactive", "archived"]).optional().openapi({
       example: "active",
     }),
+    type: z.string().optional().openapi({ example: "all" }),
     search: z.string().optional().openapi({ example: "John Doe" }),
     limit: z.coerce.number().positive().optional().openapi({ example: 10 }),
     page: z.coerce.number().positive().optional().openapi({ example: 1 }),
