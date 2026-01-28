@@ -4,6 +4,7 @@ import { jsonArrayFrom } from "kysely/helpers/mysql";
 import { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
 import { safeBigintToNumber } from "@/utilities/transform.utility.ts";
 import {
+  GetItemsByIdsProps,
   GetManyItemsProps,
   GetOneItemProps,
   IItemRepository,
@@ -283,6 +284,73 @@ class ItemRepository implements IItemRepository {
     }
 
     return this.mapper.toEntity(item);
+  }
+
+  async getByIds(props: GetItemsByIdsProps): Promise<Item[]> {
+    const { ids, spaceId, withInventory = false } = props;
+
+    if (ids.length === 0) {
+      return [];
+    }
+
+    // Get space and all children IDs for inventory filtering if spaceId provided
+    let spaceAndChildrenIds: number[] | null = null;
+    if (spaceId && withInventory) {
+      spaceAndChildrenIds = await this.getSpaceAndChildrenIds(spaceId);
+    }
+
+    let query = this.db
+      .selectFrom("items")
+      .where("id", "in", ids)
+      .where("deleted_at", "is", null)
+      .select([
+        "id",
+        "space_id",
+        "name",
+        "description",
+        "sku",
+        "price",
+        "code",
+        "price_discount",
+        "files",
+        "cost",
+        "status",
+        "weight",
+        "notes",
+        "images",
+      ]);
+
+    if (withInventory) {
+      query = query.select((eb) => {
+        let inventoryQuery = eb
+          .selectFrom("inventories")
+          .where("inventories.model_type", "=", "SUP")
+          .leftJoin("spaces", "spaces.id", "inventories.space_id")
+          .select([
+            "inventories.id",
+            "inventories.balance",
+            "inventories.notes",
+            "inventories.status",
+            "inventories.cost_per_unit",
+            "spaces.name as space_name",
+          ])
+          .whereRef("inventories.item_id", "=", "items.id");
+
+        // Filter by space and children if spaceId is provided
+        if (spaceAndChildrenIds) {
+          inventoryQuery = inventoryQuery.where(
+            "inventories.space_id",
+            "in",
+            spaceAndChildrenIds,
+          );
+        }
+
+        return [jsonArrayFrom(inventoryQuery).as("inventories")];
+      });
+    }
+
+    const result = await query.execute();
+    return result.map((row) => this.mapper.toEntity(row));
   }
 
   async create(data: Item) {

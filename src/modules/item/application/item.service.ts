@@ -1,6 +1,7 @@
 import type { IStorageService } from "@/shared/application/storage.interface.ts";
 import type { FileUploadRequestProps } from "@/shared/application/storage.interface.ts";
 import {
+  GetItemsByIdsProps,
   GetManyItemsProps,
   GetOneItemProps,
   IItemRepository,
@@ -19,6 +20,19 @@ class ItemService {
 
   async getOne(props: GetOneItemProps) {
     return await this.itemRepository.getOne(props);
+  }
+
+  async getByIds(props: GetItemsByIdsProps) {
+    const items = await this.itemRepository.getByIds(props);
+
+    // Atomic check: ensure all requested IDs were found
+    if (items.length !== props.ids.length) {
+      const foundIds = new Set(items.map((i) => i.id));
+      const missingIds = props.ids.filter((id) => !foundIds.has(id));
+      throw new Error(`ITEMS_NOT_FOUND:${missingIds.join(",")}`);
+    }
+
+    return items;
   }
 
   async create(data: Omit<Item, "id">) {

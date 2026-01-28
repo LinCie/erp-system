@@ -20,12 +20,24 @@ type GetOneItemProps = {
   withInventory?: boolean;
 };
 
+type GetItemsByIdsProps = {
+  ids: number[];
+  spaceId?: number;
+  withInventory?: boolean;
+};
+
 interface IItemRepository {
   getMany(props: GetManyItemsProps): Promise<GetManyItemsReturn>;
   getOne(props: GetOneItemProps): Promise<Item>;
+  getByIds(props: GetItemsByIdsProps): Promise<Item[]>;
   create(item: Omit<Item, "id">): Promise<Item>;
   update(id: number, item: Partial<Item>): Promise<Item>;
   delete(id: number): Promise<void>;
 }
 
-export type { GetManyItemsProps, GetOneItemProps, IItemRepository };
+export type {
+  GetItemsByIdsProps,
+  GetManyItemsProps,
+  GetOneItemProps,
+  IItemRepository,
+};

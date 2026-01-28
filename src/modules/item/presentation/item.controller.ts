@@ -7,6 +7,7 @@ import { ItemService } from "../application/item.service.ts";
 import { ItemAiService } from "../infrastructure/item.ai-service.ts";
 import { getManyItemsRoute } from "./routes/get-many-items.route.ts";
 import { getOneItemRoute } from "./routes/get-one-item.route.ts";
+import { batchReadItemsRoute } from "./routes/batch-read-items.route.ts";
 import { createItemRoute } from "./routes/create-item.route.ts";
 import { updateItemRoute } from "./routes/update-item.route.ts";
 import { deleteItemRoute } from "./routes/delete-item.route.ts";
@@ -32,6 +33,22 @@ function defineItemController(service: ItemService, aiService: ItemAiService) {
     const query = c.req.valid("query");
     const result = await service.getOne({ id, ...query });
     return c.json(result, 200);
+  });
+
+  app.openapi(batchReadItemsRoute, async (c) => {
+    const body = c.req.valid("json");
+    try {
+      const result = await service.getByIds(body);
+      return c.json({ data: result }, 200);
+    } catch (error) {
+      if (
+        error instanceof Error && error.message.startsWith("ITEMS_NOT_FOUND:")
+      ) {
+        const missingIds = error.message.replace("ITEMS_NOT_FOUND:", "");
+        return c.json({ message: `Items not found: ${missingIds}` }, 404);
+      }
+      throw error;
+    }
   });
 
   app.openapi(createItemRoute, async (c) => {
