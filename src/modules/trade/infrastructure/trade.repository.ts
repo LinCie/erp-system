@@ -12,9 +12,15 @@ import type {
 } from "../application/trade-repository.interface.ts";
 
 import { jsonArrayFrom, jsonObjectFrom } from "kysely/helpers/mysql";
+import { Transaction } from "kysely";
+import { DB } from "@/shared/infrastructure/persistence/database.d.ts";
 import { PersistenceType } from "@/shared/infrastructure/persistence/index.ts";
 import { safeBigintToNumber } from "@/utilities/transform.utility.ts";
 import { TradeMapper } from "./trade.mapper.ts";
+import type {
+  BatchOperation,
+  BatchOperationResult,
+} from "../application/batch-operations.type.ts";
 
 class TradeRepository implements ITradeRepository {
   constructor(
@@ -218,7 +224,14 @@ class TradeRepository implements ITradeRepository {
     };
   }
 
-  async getOne(props: GetOneTradeProps): Promise<Trade> {
+  getOne(props: GetOneTradeProps): Promise<Trade> {
+    return this.getOneWithExecutor(props, this.db);
+  }
+
+  private async getOneWithExecutor(
+    props: GetOneTradeProps,
+    executor: PersistenceType | Transaction<DB>,
+  ): Promise<Trade> {
     const {
       id,
       withDetails = false,
@@ -226,7 +239,7 @@ class TradeRepository implements ITradeRepository {
       withChildren = false,
     } = props;
 
-    let query = this.db
+    let query = executor
       .selectFrom("transactions")
       .where("id", "=", id)
       .where("model_type", "=", "TRD")
@@ -363,6 +376,15 @@ class TradeRepository implements ITradeRepository {
   }
 
   async create(data: CreateTradeData): Promise<Trade> {
+    return await this.db.transaction().execute((trx) => {
+      return this.createWithTransaction(data, trx);
+    });
+  }
+
+  private async createWithTransaction(
+    data: CreateTradeData,
+    trx: Transaction<DB>,
+  ): Promise<Trade> {
     const insertable = this.mapper.toInsertable({
       space_id: data.space_id,
       sender_id: data.sender_id,
@@ -373,7 +395,7 @@ class TradeRepository implements ITradeRepository {
       total: "0",
     });
 
-    const created = await this.db
+    const created = await trx
       .insertInto("transactions")
       .values({
         ...insertable,
@@ -391,19 +413,29 @@ class TradeRepository implements ITradeRepository {
 
     // Auto-generate number if not provided
     if (!data.number) {
-      await this.db
+      await trx
         .updateTable("transactions")
         .set({ number: `TX_${tradeId}` })
         .where("id", "=", tradeId)
         .executeTakeFirst();
     }
 
-    return this.getOne({ id: tradeId, withDetails: true });
+    return this.getOneWithExecutor({ id: tradeId, withDetails: true }, trx);
   }
 
   async update(id: number, data: UpdateTradeData): Promise<Trade> {
+    return await this.db.transaction().execute((trx) => {
+      return this.updateWithTransaction(id, data, trx);
+    });
+  }
+
+  private async updateWithTransaction(
+    id: number,
+    data: UpdateTradeData,
+    trx: Transaction<DB>,
+  ): Promise<Trade> {
     // Verify trade exists
-    const existingTrade = await this.db
+    const existingTrade = await trx
       .selectFrom("transactions")
       .where("id", "=", id)
       .where("model_type", "=", "TRD")
@@ -420,7 +452,7 @@ class TradeRepository implements ITradeRepository {
     // Update transaction fields
     if (Object.keys(transactionData).length > 0) {
       const updateable = this.mapper.toUpdateable(transactionData);
-      await this.db
+      await trx
         .updateTable("transactions")
         .set({ ...updateable, updated_at: new Date() })
         .where("id", "=", id)
@@ -430,7 +462,7 @@ class TradeRepository implements ITradeRepository {
     // Update details if provided
     if (details && details.length > 0) {
       // Delete existing details
-      await this.db
+      await trx
         .updateTable("transaction_details")
         .set({ deleted_at: new Date(), updated_at: new Date() })
         .where("transaction_id", "=", id)
@@ -440,7 +472,7 @@ class TradeRepository implements ITradeRepository {
       // Insert new details
       for (const detail of details) {
         const insertableDetail = this.mapper.detailToInsertable(id, detail);
-        await this.db
+        await trx
           .insertInto("transaction_details")
           .values({
             ...insertableDetail,
@@ -451,15 +483,25 @@ class TradeRepository implements ITradeRepository {
       }
     }
 
-    return this.getOne({ id, withDetails: true });
+    return this.getOneWithExecutor({ id, withDetails: true }, trx);
   }
 
   async updateTransaction(
     id: number,
     data: UpdateTradeTransactionData,
   ): Promise<Trade> {
+    return await this.db.transaction().execute((trx) => {
+      return this.updateTransactionWithTransaction(id, data, trx);
+    });
+  }
+
+  private async updateTransactionWithTransaction(
+    id: number,
+    data: UpdateTradeTransactionData,
+    trx: Transaction<DB>,
+  ): Promise<Trade> {
     // Verify trade exists
-    const existingTrade = await this.db
+    const existingTrade = await trx
       .selectFrom("transactions")
       .where("id", "=", id)
       .where("model_type", "=", "TRD")
@@ -473,21 +515,31 @@ class TradeRepository implements ITradeRepository {
 
     // Update transaction fields only (no details)
     const updateable = this.mapper.toTransactionUpdateable(data);
-    await this.db
+    await trx
       .updateTable("transactions")
       .set({ ...updateable, updated_at: new Date() })
       .where("id", "=", id)
       .executeTakeFirst();
 
-    return this.getOne({ id, withDetails: true });
+    return this.getOneWithExecutor({ id, withDetails: true }, trx);
   }
 
   async createDetail(
     tradeId: number,
     data: CreateTradeDetailData,
   ): Promise<TradeDetailType> {
+    return await this.db.transaction().execute((trx) => {
+      return this.createDetailWithTransaction(tradeId, data, trx);
+    });
+  }
+
+  private async createDetailWithTransaction(
+    tradeId: number,
+    data: CreateTradeDetailData,
+    trx: Transaction<DB>,
+  ): Promise<TradeDetailType> {
     // Verify trade exists
-    const existingTrade = await this.db
+    const existingTrade = await trx
       .selectFrom("transactions")
       .where("id", "=", tradeId)
       .where("model_type", "=", "TRD")
@@ -500,7 +552,7 @@ class TradeRepository implements ITradeRepository {
     }
 
     // Verify item exists
-    const existingItem = await this.db
+    const existingItem = await trx
       .selectFrom("items")
       .where("id", "=", data.item_id)
       .where("deleted_at", "is", null)
@@ -513,7 +565,7 @@ class TradeRepository implements ITradeRepository {
 
     // Create detail with detail_type='ITM' and detail_id=item_id
     const insertable = this.mapper.detailToInsertable(tradeId, data);
-    const created = await this.db
+    const created = await trx
       .insertInto("transaction_details")
       .values({
         ...insertable,
@@ -529,7 +581,7 @@ class TradeRepository implements ITradeRepository {
     const detailId = safeBigintToNumber(created.insertId);
 
     // Fetch and return the created detail with item info
-    const detail = await this.db
+    const detail = await trx
       .selectFrom("transaction_details")
       .where("id", "=", detailId)
       .select((eb) => [
@@ -573,8 +625,19 @@ class TradeRepository implements ITradeRepository {
     detailId: number,
     data: UpdateTradeDetailData,
   ): Promise<TradeDetailType> {
+    return await this.db.transaction().execute((trx) => {
+      return this.updateDetailWithTransaction(tradeId, detailId, data, trx);
+    });
+  }
+
+  private async updateDetailWithTransaction(
+    tradeId: number,
+    detailId: number,
+    data: UpdateTradeDetailData,
+    trx: Transaction<DB>,
+  ): Promise<TradeDetailType> {
     // Verify detail exists and belongs to trade
-    const existingDetail = await this.db
+    const existingDetail = await trx
       .selectFrom("transaction_details")
       .where("id", "=", detailId)
       .where("transaction_id", "=", tradeId)
@@ -588,14 +651,14 @@ class TradeRepository implements ITradeRepository {
 
     // Update detail (excluding immutable linking fields)
     const updateable = this.mapper.detailToUpdateable(data);
-    await this.db
+    await trx
       .updateTable("transaction_details")
       .set({ ...updateable, updated_at: new Date() })
       .where("id", "=", detailId)
       .executeTakeFirst();
 
     // Fetch and return the updated detail with item info
-    const detail = await this.db
+    const detail = await trx
       .selectFrom("transaction_details")
       .where("id", "=", detailId)
       .select((eb) => [
@@ -635,8 +698,18 @@ class TradeRepository implements ITradeRepository {
   }
 
   async deleteDetail(tradeId: number, detailId: number): Promise<void> {
+    return await this.db.transaction().execute((trx) => {
+      return this.deleteDetailWithTransaction(tradeId, detailId, trx);
+    });
+  }
+
+  private async deleteDetailWithTransaction(
+    tradeId: number,
+    detailId: number,
+    trx: Transaction<DB>,
+  ): Promise<void> {
     // Verify detail exists and belongs to trade
-    const existingDetail = await this.db
+    const existingDetail = await trx
       .selectFrom("transaction_details")
       .where("id", "=", detailId)
       .where("transaction_id", "=", tradeId)
@@ -649,7 +722,7 @@ class TradeRepository implements ITradeRepository {
     }
 
     // Soft-delete detail
-    await this.db
+    await trx
       .updateTable("transaction_details")
       .set({
         deleted_at: new Date(),
@@ -660,8 +733,17 @@ class TradeRepository implements ITradeRepository {
   }
 
   async delete(id: number): Promise<void> {
+    return await this.db.transaction().execute((trx) => {
+      return this.deleteWithTransaction(id, trx);
+    });
+  }
+
+  private async deleteWithTransaction(
+    id: number,
+    trx: Transaction<DB>,
+  ): Promise<void> {
     // Verify trade exists
-    const existingTrade = await this.db
+    const existingTrade = await trx
       .selectFrom("transactions")
       .where("id", "=", id)
       .where("model_type", "=", "TRD")
@@ -674,7 +756,7 @@ class TradeRepository implements ITradeRepository {
     }
 
     // Soft-delete all associated details
-    await this.db
+    await trx
       .updateTable("transaction_details")
       .set({
         deleted_at: new Date(),
@@ -685,7 +767,7 @@ class TradeRepository implements ITradeRepository {
       .executeTakeFirst();
 
     // Soft-delete trade
-    await this.db
+    await trx
       .updateTable("transactions")
       .set({
         status: "archived",
@@ -694,6 +776,117 @@ class TradeRepository implements ITradeRepository {
       })
       .where("id", "=", id)
       .executeTakeFirst();
+  }
+
+  async executeBatch(
+    operations: BatchOperation[],
+  ): Promise<BatchOperationResult> {
+    return await this.db.transaction().execute(async (trx) => {
+      const result: BatchOperationResult = {
+        created: [],
+        read: [],
+        updated: [],
+        deleted: [],
+        createdDetails: [],
+        updatedDetails: [],
+        deletedDetails: [],
+      };
+
+      for (const op of operations) {
+        switch (op.type) {
+          case "read":
+            if (op.ids && op.ids.length > 0) {
+              const trades = await this.getByIdsWithTransaction(
+                op.ids,
+                op.withDetails ?? false,
+                trx,
+              );
+              result.read.push(...trades);
+            }
+            break;
+          case "create": {
+            const created = await this.createWithTransaction(op.data, trx);
+            result.created.push(created);
+            break;
+          }
+          case "update": {
+            const updated = await this.updateWithTransaction(
+              op.id,
+              op.data,
+              trx,
+            );
+            result.updated.push(updated);
+            break;
+          }
+          case "updateTransaction": {
+            const updatedTrx = await this.updateTransactionWithTransaction(
+              op.id,
+              op.data,
+              trx,
+            );
+            result.updated.push(updatedTrx);
+            break;
+          }
+          case "delete": {
+            await this.deleteWithTransaction(op.id, trx);
+            result.deleted.push(op.id);
+            break;
+          }
+          case "createDetail": {
+            const createdDetail = await this.createDetailWithTransaction(
+              op.tradeId,
+              op.data,
+              trx,
+            );
+            result.createdDetails.push(createdDetail);
+            break;
+          }
+          case "updateDetail": {
+            const updatedDetail = await this.updateDetailWithTransaction(
+              op.tradeId,
+              op.detailId,
+              op.data,
+              trx,
+            );
+            result.updatedDetails.push(updatedDetail);
+            break;
+          }
+          case "deleteDetail": {
+            await this.deleteDetailWithTransaction(
+              op.tradeId,
+              op.detailId,
+              trx,
+            );
+            result.deletedDetails.push(op.detailId);
+            break;
+          }
+        }
+      }
+
+      return result;
+    });
+  }
+
+  private async getByIdsWithTransaction(
+    ids: number[],
+    withDetails: boolean,
+    trx: Transaction<DB>,
+  ): Promise<Trade[]> {
+    if (ids.length === 0) return [];
+
+    // Using simple loop for now as getOne has complex logic
+    // A better approach would be proper WHERE IN query but that requires refactoring getOne completely
+    // Given the limit is 100 max, parallel requests might be too much for DB in a transaction?
+    // Sequential strict is safer for now.
+
+    const results: Trade[] = [];
+    for (const id of ids) {
+      // Use getOneWithExecutor which is already transaction-aware
+      // For reads: "Retrieve multiple items in a single request. Returns 404 if any ID is not found (atomic behavior)."
+      const trade = await this.getOneWithExecutor({ id, withDetails }, trx);
+      results.push(trade);
+    }
+    return results;
   }
 }
 

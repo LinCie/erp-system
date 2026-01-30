@@ -3,6 +3,10 @@ import type { GetManyMetadataType } from "@/shared/application/types/get-many-me
 import type { TradeEntity } from "../domain/trade.entity.ts";
 import type { TradeStatusType } from "../domain/trade-status.type.ts";
 import type { TradeDetailType } from "../domain/trade-detail.type.ts";
+import type {
+  BatchOperation,
+  BatchOperationResult,
+} from "./batch-operations.type.ts";
 
 /**
  * Props for getMany operation
@@ -122,6 +126,7 @@ interface ITradeRepository {
     data: UpdateTradeDetailData,
   ): Promise<TradeDetailType>;
   deleteDetail(tradeId: number, detailId: number): Promise<void>;
+  executeBatch(operations: BatchOperation[]): Promise<BatchOperationResult>;
 }
 
 export type {

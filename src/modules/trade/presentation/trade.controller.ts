@@ -12,6 +12,8 @@ import { updateTradeTransactionRoute } from "./routes/update-trade-transaction.r
 import { createTradeDetailRoute } from "./routes/create-trade-detail.route.ts";
 import { updateTradeDetailRoute } from "./routes/update-trade-detail.route.ts";
 import { deleteTradeDetailRoute } from "./routes/delete-trade-detail.route.ts";
+import { batchOperationsRoute } from "./routes/batch-operations.route.ts";
+import type { BatchOperation } from "../application/batch-operations.type.ts";
 
 function defineTradeController(service: TradeService) {
   const app = new OpenAPIHono<{ Variables: JwtVariables }>();
@@ -97,6 +99,45 @@ function defineTradeController(service: TradeService) {
     const { id, detailId } = c.req.valid("param");
     await service.deleteDetail(id, detailId);
     return c.body(null, 204);
+  });
+
+  app.openapi(batchOperationsRoute, async (c) => {
+    const body = c.req.valid("json");
+    const payload = c.get("jwtPayload");
+    const sender_id = parseInt(payload.sub);
+
+    // Inject sender_id into create operations
+    const operations: BatchOperation[] = body.operations.map((op) => {
+      if (op.type === "create") {
+        return {
+          ...op,
+          data: {
+            ...op.data,
+            sender_id,
+          },
+        } as BatchOperation;
+      }
+      return op as BatchOperation;
+    });
+
+    try {
+      const result = await service.executeBatchOperations(operations);
+      return c.json(result, 200);
+    } catch (error) {
+      if (error instanceof Error) {
+        if (error.message.includes("NOT_FOUND")) {
+          return c.json(
+            { error: "NOT_FOUND", message: error.message },
+            404,
+          );
+        }
+        return c.json(
+          { error: "BAD_REQUEST", message: error.message },
+          400,
+        );
+      }
+      throw error;
+    }
   });
 
   return app;

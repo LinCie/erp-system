@@ -8,6 +8,10 @@ import type {
   UpdateTradeDetailData,
   UpdateTradeTransactionData,
 } from "./trade-repository.interface.ts";
+import type {
+  BatchOperation,
+  BatchOperationResult,
+} from "./batch-operations.type.ts";
 
 /**
  * TradeService orchestrates trade business logic via dependency injection.
@@ -55,6 +59,12 @@ class TradeService {
 
   async deleteDetail(tradeId: number, detailId: number) {
     return await this.tradeRepository.deleteDetail(tradeId, detailId);
+  }
+
+  async executeBatchOperations(
+    operations: BatchOperation[],
+  ): Promise<BatchOperationResult> {
+    return await this.tradeRepository.executeBatch(operations);
   }
 }
 
