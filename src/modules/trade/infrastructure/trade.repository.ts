@@ -792,6 +792,31 @@ class TradeRepository implements ITradeRepository {
         deletedDetails: [],
       };
 
+      // Map to store ref -> trade ID for referencing created trades
+      const refMap = new Map<string, number>();
+
+      // Helper to resolve tradeId from either direct ID or ref
+      const resolveTradeId = (
+        tradeId: number | undefined,
+        tradeIdRef: string | undefined,
+      ): number => {
+        if (tradeId !== undefined) {
+          return tradeId;
+        }
+        if (tradeIdRef !== undefined) {
+          const resolvedId = refMap.get(tradeIdRef);
+          if (resolvedId === undefined) {
+            throw new Error(
+              `REF_NOT_FOUND: Reference '${tradeIdRef}' was not created in a previous operation`,
+            );
+          }
+          return resolvedId;
+        }
+        throw new Error(
+          "TRADE_ID_REQUIRED: Either tradeId or tradeIdRef must be provided",
+        );
+      };
+
       for (const op of operations) {
         switch (op.type) {
           case "read":
@@ -807,11 +832,16 @@ class TradeRepository implements ITradeRepository {
           case "create": {
             const created = await this.createWithTransaction(op.data, trx);
             result.created.push(created);
+            // Store ref if provided
+            if (op.ref) {
+              refMap.set(op.ref, created.id);
+            }
             break;
           }
           case "update": {
+            const resolvedId = resolveTradeId(op.id, op.idRef);
             const updated = await this.updateWithTransaction(
-              op.id,
+              resolvedId,
               op.data,
               trx,
             );
@@ -819,8 +849,9 @@ class TradeRepository implements ITradeRepository {
             break;
           }
           case "updateTransaction": {
+            const resolvedId = resolveTradeId(op.id, op.idRef);
             const updatedTrx = await this.updateTransactionWithTransaction(
-              op.id,
+              resolvedId,
               op.data,
               trx,
             );
@@ -828,13 +859,15 @@ class TradeRepository implements ITradeRepository {
             break;
           }
           case "delete": {
-            await this.deleteWithTransaction(op.id, trx);
-            result.deleted.push(op.id);
+            const resolvedId = resolveTradeId(op.id, op.idRef);
+            await this.deleteWithTransaction(resolvedId, trx);
+            result.deleted.push(resolvedId);
             break;
           }
           case "createDetail": {
+            const resolvedTradeId = resolveTradeId(op.tradeId, op.tradeIdRef);
             const createdDetail = await this.createDetailWithTransaction(
-              op.tradeId,
+              resolvedTradeId,
               op.data,
               trx,
             );
@@ -842,8 +875,9 @@ class TradeRepository implements ITradeRepository {
             break;
           }
           case "updateDetail": {
+            const resolvedTradeId = resolveTradeId(op.tradeId, op.tradeIdRef);
             const updatedDetail = await this.updateDetailWithTransaction(
-              op.tradeId,
+              resolvedTradeId,
               op.detailId,
               op.data,
               trx,
@@ -852,8 +886,9 @@ class TradeRepository implements ITradeRepository {
             break;
           }
           case "deleteDetail": {
+            const resolvedTradeId = resolveTradeId(op.tradeId, op.tradeIdRef);
             await this.deleteDetailWithTransaction(
-              op.tradeId,
+              resolvedTradeId,
               op.detailId,
               trx,
             );

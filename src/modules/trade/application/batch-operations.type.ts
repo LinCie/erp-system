@@ -16,43 +16,50 @@ export type BatchReadOperation = {
 
 export type BatchCreateOperation = {
   type: "create";
+  ref?: string;
   data: CreateTradeData;
 };
 
 export type BatchUpdateOperation = {
   type: "update";
-  id: number;
+  id?: number;
+  idRef?: string;
   data: UpdateTradeData;
 };
 
 export type BatchUpdateTransactionOperation = {
   type: "updateTransaction";
-  id: number;
+  id?: number;
+  idRef?: string;
   data: UpdateTradeTransactionData;
 };
 
 export type BatchUpdateDetailOperation = {
   type: "updateDetail";
-  tradeId: number;
+  tradeId?: number;
+  tradeIdRef?: string;
   detailId: number;
   data: UpdateTradeDetailData;
 };
 
 export type BatchCreateDetailOperation = {
   type: "createDetail";
-  tradeId: number;
+  tradeId?: number;
+  tradeIdRef?: string;
   data: CreateTradeDetailData;
 };
 
 export type BatchDeleteDetailOperation = {
   type: "deleteDetail";
-  tradeId: number;
+  tradeId?: number;
+  tradeIdRef?: string;
   detailId: number;
 };
 
 export type BatchDeleteOperation = {
   type: "delete";
-  id: number;
+  id?: number;
+  idRef?: string;
 };
 
 export type BatchOperation =

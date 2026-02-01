@@ -20,6 +20,7 @@ const batchReadOperationSchema = z
 const batchCreateOperationSchema = z
   .object({
     type: z.literal("create"),
+    ref: z.string().optional().openapi({ example: "newTrade" }),
     data: createTradeBodySchema,
   })
   .openapi("BatchCreateOperation");
@@ -27,48 +28,108 @@ const batchCreateOperationSchema = z
 const batchUpdateOperationSchema = z
   .object({
     type: z.literal("update"),
-    id: z.coerce.number().int().positive(),
+    id: z.coerce.number().int().positive().optional(),
+    idRef: z.string().optional().openapi({ example: "newTrade" }),
     data: updateTradeBodySchema,
+  })
+  .refine((data) => data.id !== undefined || data.idRef !== undefined, {
+    message: "Either id or idRef must be provided",
+  })
+  .refine((data) => !(data.id !== undefined && data.idRef !== undefined), {
+    message: "Cannot provide both id and idRef",
   })
   .openapi("BatchUpdateOperation");
 
 const batchUpdateTransactionOperationSchema = z
   .object({
     type: z.literal("updateTransaction"),
-    id: z.coerce.number().int().positive(),
+    id: z.coerce.number().int().positive().optional(),
+    idRef: z.string().optional().openapi({ example: "newTrade" }),
     data: updateTradeTransactionBodySchema,
+  })
+  .refine((data) => data.id !== undefined || data.idRef !== undefined, {
+    message: "Either id or idRef must be provided",
+  })
+  .refine((data) => !(data.id !== undefined && data.idRef !== undefined), {
+    message: "Cannot provide both id and idRef",
   })
   .openapi("BatchUpdateTransactionOperation");
 
 const batchUpdateDetailOperationSchema = z
   .object({
     type: z.literal("updateDetail"),
-    tradeId: z.coerce.number().int().positive(),
+    tradeId: z.coerce.number().int().positive().optional(),
+    tradeIdRef: z.string().optional().openapi({ example: "newTrade" }),
     detailId: z.coerce.number().int().positive(),
     data: updateTradeDetailBodySchema,
   })
+  .refine(
+    (data) => data.tradeId !== undefined || data.tradeIdRef !== undefined,
+    {
+      message: "Either tradeId or tradeIdRef must be provided",
+    },
+  )
+  .refine(
+    (data) => !(data.tradeId !== undefined && data.tradeIdRef !== undefined),
+    {
+      message: "Cannot provide both tradeId and tradeIdRef",
+    },
+  )
   .openapi("BatchUpdateDetailOperation");
 
 const batchCreateDetailOperationSchema = z
   .object({
     type: z.literal("createDetail"),
-    tradeId: z.coerce.number().int().positive(),
+    tradeId: z.coerce.number().int().positive().optional(),
+    tradeIdRef: z.string().optional().openapi({ example: "newTrade" }),
     data: createTradeDetailBodySchema,
   })
+  .refine(
+    (data) => data.tradeId !== undefined || data.tradeIdRef !== undefined,
+    {
+      message: "Either tradeId or tradeIdRef must be provided",
+    },
+  )
+  .refine(
+    (data) => !(data.tradeId !== undefined && data.tradeIdRef !== undefined),
+    {
+      message: "Cannot provide both tradeId and tradeIdRef",
+    },
+  )
   .openapi("BatchCreateDetailOperation");
 
 const batchDeleteDetailOperationSchema = z
   .object({
     type: z.literal("deleteDetail"),
-    tradeId: z.coerce.number().int().positive(),
+    tradeId: z.coerce.number().int().positive().optional(),
+    tradeIdRef: z.string().optional().openapi({ example: "newTrade" }),
     detailId: z.coerce.number().int().positive(),
   })
+  .refine(
+    (data) => data.tradeId !== undefined || data.tradeIdRef !== undefined,
+    {
+      message: "Either tradeId or tradeIdRef must be provided",
+    },
+  )
+  .refine(
+    (data) => !(data.tradeId !== undefined && data.tradeIdRef !== undefined),
+    {
+      message: "Cannot provide both tradeId and tradeIdRef",
+    },
+  )
   .openapi("BatchDeleteDetailOperation");
 
 const batchDeleteOperationSchema = z
   .object({
     type: z.literal("delete"),
-    id: z.coerce.number().int().positive(),
+    id: z.coerce.number().int().positive().optional(),
+    idRef: z.string().optional().openapi({ example: "newTrade" }),
+  })
+  .refine((data) => data.id !== undefined || data.idRef !== undefined, {
+    message: "Either id or idRef must be provided",
+  })
+  .refine((data) => !(data.id !== undefined && data.idRef !== undefined), {
+    message: "Cannot provide both id and idRef",
   })
   .openapi("BatchDeleteOperation");
 
