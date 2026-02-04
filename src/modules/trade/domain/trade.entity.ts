@@ -4,6 +4,9 @@ import type { LinkType } from "@/shared/domain/types/link.type.ts";
 import type { TradeDetailType } from "./trade-detail.type.ts";
 import type { TradeStatusType } from "./trade-status.type.ts";
 import type { PlayerInfo } from "./player-info.type.ts";
+import type { TradePlayer } from "./player.type.ts";
+import type { TradeTimestamp } from "./timestamp.type.ts";
+import type { TradeAddress } from "./address.type.ts";
 
 /**
  * TradeEntity represents a trade transaction between parties (sender, receiver, handler).
@@ -42,6 +45,11 @@ interface TradeEntity extends Omit<BaseEntity, "status"> {
   all_notes?: string;
   /** Child trades (e.g. split trades) */
   children?: TradeEntity[];
+
+  //
+  players?: TradePlayer;
+  timestamps?: TradeTimestamp;
+  addresses?: TradeAddress;
 }
 
 export type { TradeEntity };

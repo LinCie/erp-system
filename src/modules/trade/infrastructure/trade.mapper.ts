@@ -12,6 +12,29 @@ import { z } from "@hono/zod-openapi";
 import { TRADE_STATUS } from "../domain/trade-status.type.ts";
 
 class TradeMapper {
+  private addressSchema = z.object({
+    street: z.string(),
+    city: z.string(),
+    state: z.string(),
+    zip: z.string(),
+    country: z.string(),
+  });
+
+  private timestampSchema = z.object({
+    createdAt: z.coerce.date(),
+    packagedAt: z.coerce.date().optional(),
+    shippedAt: z.coerce.date().optional(),
+    deliveredAt: z.coerce.date().optional(),
+    cancelledAt: z.coerce.date().optional(),
+    completedAt: z.coerce.date().optional(),
+  });
+
+  private playerDataSchema = z.object({
+    name: z.string(),
+    phone: z.string(),
+    email: z.string(),
+  });
+
   // File schema for JSON field
   private fileSchema = z.object({
     name: z.string(),
@@ -119,9 +142,14 @@ class TradeMapper {
     status: z.string().optional(),
     total: z.string().optional(),
     fee: z.string().optional(),
+
+    // JSON fields
     files: z.string().nullable().optional(),
     tags: z.string().nullable().optional(),
     links: z.string().nullable().optional(),
+    players: z.string().nullable(),
+    timestamps: z.string().nullable(),
+    addresses: z.string().nullable(),
   });
 
   // Detail insertable schema
@@ -223,6 +251,19 @@ class TradeMapper {
     if (entity.links !== undefined) {
       data.links = entity.links ? JSON.stringify(entity.links) : null;
     }
+    if (entity.players !== undefined) {
+      data.players = entity.players ? JSON.stringify(entity.players) : null;
+    }
+    if (entity.timestamps !== undefined) {
+      data.timestamps = entity.timestamps
+        ? JSON.stringify(entity.timestamps)
+        : null;
+    }
+    if (entity.addresses !== undefined) {
+      data.addresses = entity.addresses
+        ? JSON.stringify(entity.addresses)
+        : null;
+    }
 
     return this.updateableSchema.parse(data);
   }
@@ -260,6 +301,39 @@ class TradeMapper {
           : row.links;
       } catch {
         links = undefined;
+      }
+    }
+
+    let players: TradeEntity["players"];
+    if (row.players) {
+      try {
+        players = typeof row.players === "string"
+          ? JSON.parse(row.players)
+          : row.players;
+      } catch {
+        players = undefined;
+      }
+    }
+
+    let timestamps: TradeEntity["timestamps"];
+    if (row.timestamps) {
+      try {
+        timestamps = typeof row.timestamps === "string"
+          ? JSON.parse(row.timestamps)
+          : row.timestamps;
+      } catch {
+        timestamps = undefined;
+      }
+    }
+
+    let addresses: TradeEntity["addresses"];
+    if (row.addresses) {
+      try {
+        addresses = typeof row.addresses === "string"
+          ? JSON.parse(row.addresses)
+          : row.addresses;
+      } catch {
+        addresses = undefined;
       }
     }
 
@@ -345,6 +419,9 @@ class TradeMapper {
       files,
       tags,
       links,
+      players,
+      timestamps,
+      addresses,
       details,
       children,
       sender,
