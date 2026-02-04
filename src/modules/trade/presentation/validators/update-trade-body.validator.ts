@@ -17,6 +17,35 @@ const linkSchema = z
   })
   .openapi("TradeLink");
 
+const tradeAddressSchema = z
+  .object({
+    street: z.string().openapi({ example: "123 Main St" }),
+    city: z.string().openapi({ example: "New York" }),
+    state: z.string().openapi({ example: "NY" }),
+    zip: z.string().openapi({ example: "10001" }),
+    country: z.string().openapi({ example: "USA" }),
+  })
+  .openapi("TradeAddress");
+
+const playersSchema = z
+  .object({
+    name: z.string().openapi({ example: "John Doe" }),
+    phone: z.string().openapi({ example: "1234567890" }),
+    email: z.string().openapi({ example: "example@email.com" }),
+  })
+  .openapi("TradePlayer");
+
+const timestampsSchema = z
+  .object({
+    createdAt: z.coerce.date(),
+    packagedAt: z.coerce.date().nullable().optional(),
+    shippedAt: z.coerce.date().nullable().optional(),
+    deliveredAt: z.coerce.date().nullable().optional(),
+    cancelledAt: z.coerce.date().nullable().optional(),
+    completedAt: z.coerce.date().nullable().optional(),
+  })
+  .openapi("TradeTimestamps");
+
 const tradeDetailInputSchema = z
   .object({
     item_id: z.coerce.number().openapi({ example: 1 }),
@@ -57,6 +86,32 @@ const updateTradeBodySchema = z
       example: ["urgent", "vip"],
     }),
     links: z.array(linkSchema).optional().openapi({ example: [] }),
+    players: playersSchema.optional().openapi({
+      example: {
+        name: "John Doe",
+        phone: "1234567890",
+        email: "example@email.com",
+      },
+    }),
+    timestamps: timestampsSchema.optional().openapi({
+      example: {
+        createdAt: "2024-01-15T10:00:00Z",
+        packagedAt: "2024-01-15T10:30:00Z",
+        shippedAt: "2024-01-15T11:00:00Z",
+        deliveredAt: "2024-01-15T11:30:00Z",
+        cancelledAt: "2024-01-15T12:00:00Z",
+        completedAt: "2024-01-15T12:30:00Z",
+      },
+    }),
+    addresses: tradeAddressSchema.optional().openapi({
+      example: {
+        street: "123 Main St",
+        city: "New York",
+        state: "NY",
+        zip: "10001",
+        country: "USA",
+      },
+    }),
     details: z.array(tradeDetailInputSchema).optional().openapi({
       example: [],
     }),
