@@ -24,7 +24,7 @@
   "tasks": {
     "start": "deno run --allow-all --env-file src/main.ts",
     "dev": "deno run --watch --allow-all --env-file ./src/main.ts",
-    "db:generate": "deno run --allow-env --env-file npm:kysely-codegen --out-file ./src/shared/infrastructure/persistence/database.d.ts",
+    "db:generate": "deno run --allow-all npm:kysely-codegen --out-file ./src/shared/infrastructure/persistence/database.d.ts",
     "db:migrate": "deno run --allow-all --env-file scripts/migrate.ts",
     "db:rollback": "deno run --allow-all --env-file scripts/rollback.ts",
     "create:module": "deno run --allow-write --allow-read scripts/create-module.ts",
