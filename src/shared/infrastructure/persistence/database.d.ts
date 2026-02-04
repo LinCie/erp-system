@@ -149,6 +149,7 @@ export interface Inventories {
 }
 
 export interface Items {
+  category_name: string | null;
   code: string | null;
   cost: Generated<Decimal>;
   created_at: Date | null;
@@ -176,6 +177,7 @@ export interface Items {
   type_id: number | null;
   type_type: string | null;
   updated_at: Date | null;
+  variants: Json | null;
   weight: Generated<Decimal>;
 }
 
@@ -407,6 +409,7 @@ export interface TransactionDetails {
 }
 
 export interface Transactions {
+  addresses: Json | null;
   class: string | null;
   created_at: Date | null;
   deleted_at: Date | null;
@@ -424,6 +427,7 @@ export interface Transactions {
   input_type: string | null;
   links: Json | null;
   model_id: number | null;
+  model_subtype: string | null;
   model_type: string | null;
   notes: string | null;
   number: string | null;
@@ -432,6 +436,7 @@ export interface Transactions {
   output_type: string | null;
   parent_id: number | null;
   parent_type: string | null;
+  players: Json | null;
   received_time: Date | null;
   receiver_id: number | null;
   receiver_notes: string | null;
@@ -448,6 +453,7 @@ export interface Transactions {
   space_type: string | null;
   status: Generated<string>;
   tags: Json | null;
+  timestamps: Json | null;
   total: Generated<Decimal>;
   total_details: Generated<Decimal | null>;
   type_id: number | null;
