@@ -1,7 +1,6 @@
 import { z } from "@hono/zod-openapi";
 import { createTradeBodySchema } from "./create-trade-body.validator.ts";
 import { updateTradeBodySchema } from "./update-trade-body.validator.ts";
-import { updateTradeTransactionBodySchema } from "./update-trade-transaction-body.validator.ts";
 import { createTradeDetailBodySchema } from "./create-trade-detail-body.validator.ts";
 import { updateTradeDetailBodySchema } from "./update-trade-detail-body.validator.ts";
 
@@ -45,7 +44,7 @@ const batchUpdateTransactionOperationSchema = z
     type: z.literal("updateTransaction"),
     id: z.coerce.number().int().positive().optional(),
     idRef: z.string().optional().openapi({ example: "newTrade" }),
-    data: updateTradeTransactionBodySchema,
+    data: updateTradeBodySchema,
   })
   .refine((data) => data.id !== undefined || data.idRef !== undefined, {
     message: "Either id or idRef must be provided",
