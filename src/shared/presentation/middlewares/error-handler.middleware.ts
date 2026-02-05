@@ -2,6 +2,10 @@ import type { Context, ErrorHandler } from "hono";
 import * as Sentry from "@sentry/node";
 import { HTTPException } from "hono/http-exception";
 import { MapperError } from "../../domain/errors/mapper.error.ts";
+import {
+  InvalidError,
+  NotFoundError,
+} from "../../domain/errors/common.error.ts";
 
 /**
  * Known application error codes mapped to HTTP status codes
@@ -41,6 +45,20 @@ const errorHandler: ErrorHandler = (err: Error, c: Context) => {
     return c.json(
       { error: err.message, status: err.status },
       err.status,
+    );
+  }
+
+  if (err instanceof InvalidError) {
+    return c.json(
+      { error: err.message, status: 400 },
+      400,
+    );
+  }
+
+  if (err instanceof NotFoundError) {
+    return c.json(
+      { error: err.message, status: 404 },
+      404,
     );
   }
 
