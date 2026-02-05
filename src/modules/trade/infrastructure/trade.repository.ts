@@ -926,6 +926,52 @@ class TradeRepository implements ITradeRepository {
     }
     return results;
   }
+
+  public async getOneByNumber(number: string): Promise<Trade | null> {
+    const trade = await this.db
+      .selectFrom("transactions")
+      .where("number", "=", number)
+      .where("model_type", "=", "TRD")
+      .where("deleted_at", "is", null)
+      .select([
+        "id",
+        "number",
+        "space_id",
+        "status",
+        "total",
+        "fee",
+        "sent_time",
+        "received_time",
+        "sender_id",
+        "receiver_id",
+        "handler_id",
+        "parent_id",
+        "sender_notes",
+        "receiver_notes",
+        "handler_notes",
+        "description",
+        "files",
+        "tags",
+        "links",
+        "players",
+        "timestamps",
+        "addresses",
+        "created_at",
+        "updated_at",
+        "deleted_at",
+      ])
+      .executeTakeFirst();
+
+    if (!trade) {
+      return null;
+    }
+
+    try {
+      return this.mapper.toEntity(trade);
+    } catch {
+      return null;
+    }
+  }
 }
 
 export { TradeRepository };

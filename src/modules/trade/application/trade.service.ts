@@ -12,6 +12,7 @@ import type {
   BatchOperation,
   BatchOperationResult,
 } from "./batch-operations.type.ts";
+import { NotFoundError } from "@/shared/domain/errors/common.error.ts";
 
 /**
  * TradeService orchestrates trade business logic via dependency injection.
@@ -65,6 +66,21 @@ class TradeService {
     operations: BatchOperation[],
   ): Promise<BatchOperationResult> {
     return await this.tradeRepository.executeBatch(operations);
+  }
+
+  async tradeLookup(number: string, phone: string): Promise<boolean> {
+    const trade = await this.tradeRepository.getOneByNumber(number);
+
+    if (!trade) {
+      throw new NotFoundError("Trade not found");
+    }
+
+    const last4PhoneDigit = trade.players?.phone.slice(-4);
+    if (last4PhoneDigit !== phone) {
+      return false;
+    }
+
+    return true;
   }
 }
 

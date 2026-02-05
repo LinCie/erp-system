@@ -11,6 +11,7 @@ import { deleteTradeRoute } from "./routes/delete-trade.route.ts";
 import { createTradeDetailRoute } from "./routes/create-trade-detail.route.ts";
 import { updateTradeDetailRoute } from "./routes/update-trade-detail.route.ts";
 import { deleteTradeDetailRoute } from "./routes/delete-trade-detail.route.ts";
+import { lookupRoute } from "./routes/lookup-lookup.route.ts";
 import { batchOperationsRoute } from "./routes/batch-operations.route.ts";
 import type { BatchOperation } from "../application/batch-operations.type.ts";
 
@@ -117,6 +118,12 @@ function defineTradeController(service: TradeService) {
       }
       throw error;
     }
+  });
+
+  app.openapi(lookupRoute, async (c) => {
+    const body = c.req.valid("json");
+    const result = await service.tradeLookup(body.number, body.phone);
+    return c.json({ success: result }, 200);
   });
 
   return app;

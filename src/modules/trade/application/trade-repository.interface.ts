@@ -102,6 +102,11 @@ type UpdateTradeDetailData = Partial<
   Omit<TradeDetailInput, "item_id">
 >;
 
+type TradeLookupData = {
+  number: string;
+  phone: string;
+};
+
 /**
  * Repository interface for trade data access operations
  */
@@ -127,6 +132,7 @@ interface ITradeRepository {
   ): Promise<TradeDetailType>;
   deleteDetail(tradeId: number, detailId: number): Promise<void>;
   executeBatch(operations: BatchOperation[]): Promise<BatchOperationResult>;
+  getOneByNumber(number: string): Promise<TradeEntity | null>;
 }
 
 export type {
@@ -137,6 +143,7 @@ export type {
   GetOneTradeProps,
   ITradeRepository,
   TradeDetailInput,
+  TradeLookupData,
   UpdateTradeData,
   UpdateTradeDetailData,
   UpdateTradeTransactionData,
