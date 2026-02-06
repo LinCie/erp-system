@@ -14,6 +14,17 @@ import type {
 } from "./batch-operations.type.ts";
 import { NotFoundError } from "@/shared/domain/errors/common.error.ts";
 
+type successTradeLookupReturn = {
+  id: number;
+  success: true;
+};
+
+type failedTradeLookupReturn = {
+  success: false;
+};
+
+type tradeLookupReturn = successTradeLookupReturn | failedTradeLookupReturn;
+
 /**
  * TradeService orchestrates trade business logic via dependency injection.
  * Delegates all data access operations to the injected repository.
@@ -68,19 +79,19 @@ class TradeService {
     return await this.tradeRepository.executeBatch(operations);
   }
 
-  async tradeLookup(number: string, phone: string): Promise<boolean> {
+  async tradeLookup(number: string, phone: string): Promise<tradeLookupReturn> {
     const trade = await this.tradeRepository.getOneByNumber(number);
 
     if (!trade) {
-      throw new NotFoundError("Trade not found");
+      return { success: false };
     }
 
     const last4PhoneDigit = trade.players?.phone.slice(-4);
     if (last4PhoneDigit !== phone) {
-      return false;
+      return { success: false };
     }
 
-    return true;
+    return { id: trade.id, success: true };
   }
 }
 

@@ -123,7 +123,7 @@ function defineTradeController(service: TradeService) {
   app.openapi(lookupRoute, async (c) => {
     const body = c.req.valid("json");
     const result = await service.tradeLookup(body.number, body.phone);
-    return c.json({ success: result }, 200);
+    return c.json(result, 200);
   });
 
   return app;
