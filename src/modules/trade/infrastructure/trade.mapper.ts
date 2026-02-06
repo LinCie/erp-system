@@ -21,12 +21,15 @@ class TradeMapper {
   });
 
   private timestampSchema = z.object({
-    createdAt: z.coerce.date(),
-    packagedAt: z.coerce.date().optional(),
-    shippedAt: z.coerce.date().optional(),
-    deliveredAt: z.coerce.date().optional(),
-    cancelledAt: z.coerce.date().optional(),
-    completedAt: z.coerce.date().optional(),
+    createdAt: z.preprocess(
+      (val) => (val === null ? new Date() : val),
+      z.coerce.date(),
+    ),
+    packagedAt: z.preprocess((val) => val ?? null, z.date().nullable()),
+    shippedAt: z.preprocess((val) => val ?? null, z.date().nullable()),
+    deliveredAt: z.preprocess((val) => val ?? null, z.date().nullable()),
+    cancelledAt: z.preprocess((val) => val ?? null, z.date().nullable()),
+    completedAt: z.preprocess((val) => val ?? null, z.date().nullable()),
   });
 
   private playerDataSchema = z.object({
@@ -107,6 +110,9 @@ class TradeMapper {
     sender: this.playerInfoSchema.optional(),
     receiver: this.playerInfoSchema.optional(),
     handler: this.playerInfoSchema.optional(),
+    players: this.playerDataSchema.optional(),
+    addresses: this.addressSchema.optional(),
+    timestamps: this.timestampSchema.optional(),
     sku: z.string().optional(),
     all_notes: z.string().optional(),
     created_at: z.coerce.date().optional(),

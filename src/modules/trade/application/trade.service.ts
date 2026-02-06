@@ -12,7 +12,6 @@ import type {
   BatchOperation,
   BatchOperationResult,
 } from "./batch-operations.type.ts";
-import { NotFoundError } from "@/shared/domain/errors/common.error.ts";
 
 type successTradeLookupReturn = {
   id: number;

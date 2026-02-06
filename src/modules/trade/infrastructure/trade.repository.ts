@@ -455,6 +455,7 @@ class TradeRepository implements ITradeRepository {
     // Update transaction fields
     if (Object.keys(transactionData).length > 0) {
       const updateable = this.mapper.toUpdateable(transactionData);
+
       await trx
         .updateTable("transactions")
         .set({ ...updateable, updated_at: new Date() })
