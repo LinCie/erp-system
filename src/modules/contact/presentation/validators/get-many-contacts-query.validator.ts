@@ -10,7 +10,10 @@ const getManyContactsQuerySchema = z
     limit: z.coerce.number().positive().optional().openapi({ example: 10 }),
     page: z.coerce.number().positive().optional().openapi({ example: 1 }),
     space_id: z.coerce.number().positive().openapi({ example: 1 }),
-    with_full_details: z.coerce.boolean().openapi({ example: true }),
+    with_full_details: z.string().transform((v) => v === "true")
+      .openapi({ example: "true" }),
+    with_last_trade: z.string().transform((v) => v === "true").optional()
+      .openapi({ example: "true" }),
   })
   .openapi("GetManyContactsQuery");
 

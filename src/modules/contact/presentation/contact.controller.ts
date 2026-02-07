@@ -18,11 +18,13 @@ function defineContactController(service: ContactService) {
   app.use("/*", jwt({ secret: jwtSecret }));
 
   app.openapi(getManyContactsRoute, async (c) => {
-    const { space_id, with_full_details, ...rest } = c.req.valid("query");
+    const { space_id, with_full_details, with_last_trade, ...rest } = c.req
+      .valid("query");
     const result = await service.getMany({
       ...rest,
       spaceId: space_id,
       withFullDetails: with_full_details,
+      withLastTrade: with_last_trade,
     });
     return c.json(result, 200);
   });

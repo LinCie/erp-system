@@ -6,6 +6,7 @@ import {
 } from "../application/contact-repository.interface.ts";
 import { ContactEntity as Contact } from "../domain/contact.entity.ts";
 import { ContactMapper } from "./contact.mapper.ts";
+import { jsonObjectFrom } from "kysely/helpers/mysql";
 
 class ContactRepository implements IContactRepository {
   constructor(
@@ -14,7 +15,14 @@ class ContactRepository implements IContactRepository {
   ) {}
 
   async getMany(props: GetManyContactsProps) {
-    const { page = 1, limit = 10, spaceId, type, search } = props;
+    const {
+      page = 1,
+      limit = 10,
+      withLastTrade = false,
+      spaceId,
+      type,
+      search,
+    } = props;
 
     // Count query with relations join
     let countQuery = this.db
@@ -32,6 +40,9 @@ class ContactRepository implements IContactRepository {
         "p.id",
         "p.name",
         "p.email",
+        "p.code",
+        "p.notes",
+        "p.status",
       ])
       .limit(limit)
       .offset((page - 1) * limit);
@@ -117,6 +128,21 @@ class ContactRepository implements IContactRepository {
           eb("notes", "like", searchTerm),
           eb("address", "like", searchTerm),
         ])
+      );
+    }
+
+    if (withLastTrade) {
+      query = query.select((eb) =>
+        jsonObjectFrom(
+          eb
+            .selectFrom("transactions as t")
+            .whereRef("t.receiver_id", "=", "p.id")
+            .where("t.receiver_type", "=", "PLAY")
+            .where("t.deleted_at", "is", null)
+            .select(["t.id", "t.number"])
+            .orderBy("t.created_at", "desc")
+            .limit(1),
+        ).as("last_trade")
       );
     }
 
