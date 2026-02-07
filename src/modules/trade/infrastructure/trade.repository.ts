@@ -391,7 +391,7 @@ class TradeRepository implements ITradeRepository {
     const insertable = this.mapper.toInsertable({
       space_id: data.space_id,
       sender_id: data.sender_id,
-      sent_time: data.sent_time,
+      sent_time: data.sent_time ?? new Date(),
       sender_notes: data.sender_notes,
       number: data.number,
       status: "TX_DRAFT",
@@ -402,6 +402,7 @@ class TradeRepository implements ITradeRepository {
       .insertInto("transactions")
       .values({
         ...insertable,
+        space_type: "SPACE",
         model_type: "TRD",
         created_at: new Date(),
         updated_at: new Date(),
