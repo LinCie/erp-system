@@ -1,12 +1,9 @@
-import type { TradeEntity } from "../domain/trade.entity.ts";
-import type { TradeDetailType } from "../domain/trade-detail.type.ts";
-import type {
-  CreateTradeData,
-  CreateTradeDetailData,
-  UpdateTradeData,
-  UpdateTradeDetailData,
-  UpdateTradeTransactionData,
-} from "./trade-repository.interface.ts";
+import { TradeDetailEntity } from "../domain/entities/trade-detail.entity.ts";
+import { TradeEntity } from "../domain/entities/trade.entity.ts";
+import { CreateTradeDetailProps } from "./types/create-trade-detail.type.ts";
+import { CreateTradeProps } from "./types/create-trade.type.ts";
+import { UpdateTradeDetailProps } from "./types/update-trade-detail.type.ts";
+import { UpdateTradeProps } from "./types/update-trade.type.ts";
 
 export type BatchReadOperation = {
   type: "read";
@@ -17,21 +14,14 @@ export type BatchReadOperation = {
 export type BatchCreateOperation = {
   type: "create";
   ref?: string;
-  data: CreateTradeData;
+  data: CreateTradeProps;
 };
 
 export type BatchUpdateOperation = {
   type: "update";
   id?: number;
   idRef?: string;
-  data: UpdateTradeData;
-};
-
-export type BatchUpdateTransactionOperation = {
-  type: "updateTransaction";
-  id?: number;
-  idRef?: string;
-  data: UpdateTradeTransactionData;
+  data: UpdateTradeProps;
 };
 
 export type BatchUpdateDetailOperation = {
@@ -39,14 +29,14 @@ export type BatchUpdateDetailOperation = {
   tradeId?: number;
   tradeIdRef?: string;
   detailId: number;
-  data: UpdateTradeDetailData;
+  data: UpdateTradeDetailProps;
 };
 
 export type BatchCreateDetailOperation = {
   type: "createDetail";
   tradeId?: number;
   tradeIdRef?: string;
-  data: CreateTradeDetailData;
+  data: CreateTradeDetailProps;
 };
 
 export type BatchDeleteDetailOperation = {
@@ -66,18 +56,17 @@ export type BatchOperation =
   | BatchReadOperation
   | BatchCreateOperation
   | BatchUpdateOperation
-  | BatchUpdateTransactionOperation
   | BatchUpdateDetailOperation
   | BatchCreateDetailOperation
   | BatchDeleteDetailOperation
   | BatchDeleteOperation;
 
-export type BatchOperationResult = {
+export type BatchOperationReturn = {
   created: TradeEntity[];
   read: TradeEntity[];
   updated: TradeEntity[];
   deleted: number[];
-  createdDetails: TradeDetailType[];
-  updatedDetails: TradeDetailType[];
+  createdDetails: TradeDetailEntity[];
+  updatedDetails: TradeDetailEntity[];
   deletedDetails: number[];
 };

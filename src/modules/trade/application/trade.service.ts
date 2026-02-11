@@ -1,17 +1,20 @@
-import type {
-  CreateTradeData,
-  CreateTradeDetailData,
-  GetManyTradesProps,
-  GetOneTradeProps,
-  ITradeRepository,
-  UpdateTradeData,
-  UpdateTradeDetailData,
-  UpdateTradeTransactionData,
-} from "./trade-repository.interface.ts";
+import type { TradeEntity } from "../domain/entities/trade.entity.ts";
+import type { TradeDetailEntity } from "../domain/entities/trade-detail.entity.ts";
+import type { TradeRepository } from "./trade.repository.ts";
 import type {
   BatchOperation,
-  BatchOperationResult,
+  BatchOperationReturn,
 } from "./batch-operations.type.ts";
+import type { CreateTradeProps } from "./types/create-trade.type.ts";
+import type { CreateTradeDetailProps } from "./types/create-trade-detail.type.ts";
+import type {
+  GetManyTradesProps,
+  GetManyTradesReturn,
+} from "./types/get-many-trades.type.ts";
+import type { GetOneTradeProps } from "./types/get-one-trade.type.ts";
+import type { UpdateTradeProps } from "./types/update-trade.type.ts";
+import type { UpdateTradeDetailProps } from "./types/update-trade-detail.type.ts";
+import { NotFoundError } from "@/shared/domain/errors/common.error.ts";
 
 type successTradeLookupReturn = {
   id: number;
@@ -29,64 +32,129 @@ type tradeLookupReturn = successTradeLookupReturn | failedTradeLookupReturn;
  * Delegates all data access operations to the injected repository.
  */
 class TradeService {
-  constructor(private readonly tradeRepository: ITradeRepository) {}
+  constructor(private readonly tradeRepository: TradeRepository) {}
 
-  async getMany(props: GetManyTradesProps) {
+  async getMany(props: GetManyTradesProps): Promise<GetManyTradesReturn> {
     return await this.tradeRepository.getMany(props);
   }
 
-  async getOne(props: GetOneTradeProps) {
-    return await this.tradeRepository.getOne(props);
+  async getOne(props: GetOneTradeProps): Promise<TradeEntity> {
+    const trade = await this.tradeRepository.getOne(props);
+
+    if (!trade) {
+      throw new NotFoundError("Trade not found");
+    }
+
+    return trade;
   }
 
-  async create(data: CreateTradeData) {
-    return await this.tradeRepository.create(data);
+  async create(data: CreateTradeProps): Promise<TradeEntity> {
+    const cleanData: CreateTradeProps = {
+      ...data,
+      status: data.status ?? "TX_DRAFT",
+      sentTime: data.sentTime ?? new Date(),
+      createdAt: data.createdAt ?? new Date(),
+      updatedAt: data.updatedAt ?? new Date(),
+    };
+
+    const createdId = await this.tradeRepository.create(cleanData);
+    if (!createdId) {
+      throw new Error("Failed to create trade");
+    }
+
+    if (!data.number) {
+      await this.update(createdId, { number: "TX_" + createdId });
+    }
+
+    return await this.getOne({ id: createdId });
   }
 
-  async update(id: number, data: UpdateTradeData) {
-    return await this.tradeRepository.update(id, data);
+  async update(id: number, data: UpdateTradeProps): Promise<TradeEntity> {
+    const cleanData: UpdateTradeProps = {
+      ...data,
+      updatedAt: data.updatedAt ?? new Date(),
+    };
+
+    await this.tradeRepository.update(id, cleanData);
+    return this.getOne({ id });
   }
 
-  async delete(id: number) {
-    return await this.tradeRepository.delete(id);
+  delete(id: number): Promise<void> {
+    const now = new Date();
+    return this.tradeRepository.delete(id, now);
   }
 
-  // New methods for trade transaction and detail separation
-  async updateTransaction(id: number, data: UpdateTradeTransactionData) {
-    return await this.tradeRepository.updateTransaction(id, data);
+  async getOneDetail(detailId: number): Promise<TradeDetailEntity> {
+    const detail = await this.tradeRepository.getOneDetail(detailId);
+
+    if (!detail) {
+      throw new NotFoundError("Trade detail not found");
+    }
+
+    return detail;
   }
 
-  async createDetail(tradeId: number, data: CreateTradeDetailData) {
-    return await this.tradeRepository.createDetail(tradeId, data);
+  async createDetail(
+    tradeId: number,
+    data: CreateTradeDetailProps,
+  ): Promise<TradeDetailEntity> {
+    const cleanData: CreateTradeDetailProps = {
+      ...data,
+      createdAt: data.createdAt ?? new Date(),
+      updatedAt: data.updatedAt ?? new Date(),
+    };
+
+    const id = await this.tradeRepository.createDetail(tradeId, cleanData);
+
+    if (!id) {
+      throw new Error("Failed to create trade detail");
+    }
+
+    return this.getOneDetail(id);
   }
 
   async updateDetail(
     tradeId: number,
     detailId: number,
-    data: UpdateTradeDetailData,
-  ) {
-    return await this.tradeRepository.updateDetail(tradeId, detailId, data);
+    data: UpdateTradeDetailProps,
+  ): Promise<TradeDetailEntity> {
+    const cleanData: UpdateTradeDetailProps = {
+      ...data,
+      updatedAt: data.updatedAt ?? new Date(),
+    };
+
+    await this.tradeRepository.updateDetail(tradeId, detailId, cleanData);
+    return this.getOneDetail(detailId);
   }
 
-  async deleteDetail(tradeId: number, detailId: number) {
-    return await this.tradeRepository.deleteDetail(tradeId, detailId);
+  deleteDetail(tradeId: number, detailId: number): Promise<void> {
+    const now = new Date();
+    return this.tradeRepository.deleteDetail(tradeId, detailId, now);
   }
 
   async executeBatchOperations(
     operations: BatchOperation[],
-  ): Promise<BatchOperationResult> {
+  ): Promise<BatchOperationReturn> {
     return await this.tradeRepository.executeBatch(operations);
   }
 
-  async tradeLookup(number: string, phone: string): Promise<tradeLookupReturn> {
+  async tradeLookup(
+    number: string,
+    lastFourDigits: string,
+  ): Promise<tradeLookupReturn> {
     const trade = await this.tradeRepository.getOneByNumber(number);
 
     if (!trade) {
+      throw new NotFoundError("Trade not found");
+    }
+
+    const storedPhone = trade.players?.phone;
+    if (!storedPhone) {
       return { success: false };
     }
 
-    const last4PhoneDigit = trade.players?.phone.slice(-4);
-    if (last4PhoneDigit !== phone) {
+    const storedLastFour = storedPhone.slice(-4);
+    if (storedLastFour !== lastFourDigits) {
       return { success: false };
     }
 
