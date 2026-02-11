@@ -2,8 +2,8 @@ import { z } from "@hono/zod-openapi";
 
 export const lookupBodyValidatorSchema = z
   .object({
-    number: z.string().openapi({ example: "1234567890" }),
-    phone: z.string().openapi({ example: "1234567890" }),
+    number: z.string().openapi({ example: "TX_123" }),
+    lastFourDigits: z.string().length(4).openapi({ example: "7890" }),
   })
   .openapi("LookupBodyValidatorSchema");
 

@@ -2,17 +2,22 @@ import { z } from "@hono/zod-openapi";
 
 const getOneTradeQuerySchema = z
   .object({
-    withDetails: z
+    with_details: z
       .string()
       .transform((v) => v === "true")
       .optional()
       .openapi({ example: "true" }),
-    withPlayers: z
+    with_players: z
       .string()
       .transform((v) => v === "true")
       .optional()
       .openapi({ example: "true" }),
-    withChildren: z
+    with_children: z
+      .string()
+      .transform((v) => v === "true")
+      .optional()
+      .openapi({ example: "true" }),
+    with_parent: z
       .string()
       .transform((v) => v === "true")
       .optional()

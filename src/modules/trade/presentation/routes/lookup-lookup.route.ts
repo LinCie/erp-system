@@ -5,9 +5,10 @@ import { lookupResponseSchema } from "../schemas/lookup-response.schema.ts";
 const lookupRoute = createRoute({
   method: "post",
   path: "/lookup",
-  tags: ["Trade"],
+  tags: ["Trades"],
   summary: "Lookup trade",
-  description: "Lookup trade by number and phone",
+  description: "Lookup trade by number and last four digits of phone",
+  security: [{ Bearer: [] }],
   request: {
     body: {
       content: {

@@ -24,15 +24,42 @@ function defineTradeController(service: TradeService) {
   app.use("/*", jwt({ secret: jwtSecret }));
 
   app.openapi(getManyTradesRoute, async (c) => {
-    const query = c.req.valid("query");
-    const result = await service.getMany(query);
+    const {
+      space_id,
+      model_type,
+      with_details,
+      with_players,
+      with_children,
+      with_parent,
+      ...rest
+    } = c.req.valid("query");
+    const result = await service.getMany({
+      ...rest,
+      spaceId: space_id,
+      modelType: model_type,
+      withDetails: with_details,
+      withPlayers: with_players,
+      withChildren: with_children,
+      withParent: with_parent,
+    });
     return c.json(result, 200);
   });
 
   app.openapi(getOneTradeRoute, async (c) => {
     const { id } = c.req.valid("param");
-    const query = c.req.valid("query");
-    const result = await service.getOne({ id, ...query });
+    const {
+      with_details,
+      with_players,
+      with_children,
+      with_parent,
+    } = c.req.valid("query");
+    const result = await service.getOne({
+      id,
+      withDetails: with_details,
+      withPlayers: with_players,
+      withChildren: with_children,
+      withParent: with_parent,
+    });
     return c.json(result, 200);
   });
 
@@ -41,7 +68,7 @@ function defineTradeController(service: TradeService) {
     const payload = c.get("jwtPayload");
     const data = {
       ...body,
-      sender_id: parseInt(payload.sub),
+      senderId: parseInt(payload.sub as string, 10),
     };
     const result = await service.create(data);
     return c.json(result, 201);
@@ -84,16 +111,16 @@ function defineTradeController(service: TradeService) {
   app.openapi(batchOperationsRoute, async (c) => {
     const body = c.req.valid("json");
     const payload = c.get("jwtPayload");
-    const sender_id = parseInt(payload.sub);
+    const senderId = parseInt(payload.sub as string, 10);
 
-    // Inject sender_id into create operations
+    // Inject senderId into create operations
     const operations: BatchOperation[] = body.operations.map((op) => {
       if (op.type === "create") {
         return {
           ...op,
           data: {
             ...op.data,
-            sender_id,
+            senderId,
           },
         } as BatchOperation;
       }
@@ -122,7 +149,10 @@ function defineTradeController(service: TradeService) {
 
   app.openapi(lookupRoute, async (c) => {
     const body = c.req.valid("json");
-    const result = await service.tradeLookup(body.number, body.phone);
+    const result = await service.tradeLookup(
+      body.number,
+      body.lastFourDigits,
+    );
     return c.json(result, 200);
   });
 

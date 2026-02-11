@@ -39,21 +39,6 @@ const batchUpdateOperationSchema = z
   })
   .openapi("BatchUpdateOperation");
 
-const batchUpdateTransactionOperationSchema = z
-  .object({
-    type: z.literal("updateTransaction"),
-    id: z.coerce.number().int().positive().optional(),
-    idRef: z.string().optional().openapi({ example: "newTrade" }),
-    data: updateTradeBodySchema,
-  })
-  .refine((data) => data.id !== undefined || data.idRef !== undefined, {
-    message: "Either id or idRef must be provided",
-  })
-  .refine((data) => !(data.id !== undefined && data.idRef !== undefined), {
-    message: "Cannot provide both id and idRef",
-  })
-  .openapi("BatchUpdateTransactionOperation");
-
 const batchUpdateDetailOperationSchema = z
   .object({
     type: z.literal("updateDetail"),
@@ -136,7 +121,6 @@ const batchOperationSchema = z.discriminatedUnion("type", [
   batchReadOperationSchema,
   batchCreateOperationSchema,
   batchUpdateOperationSchema,
-  batchUpdateTransactionOperationSchema,
   batchUpdateDetailOperationSchema,
   batchCreateDetailOperationSchema,
   batchDeleteDetailOperationSchema,
