@@ -3,16 +3,47 @@ import type {
   TransactionDetails,
   Transactions,
 } from "@/shared/infrastructure/persistence/database.d.ts";
-import type { TradeEntity } from "../domain/trade.entity.ts";
-import type { TradeDetailType } from "../domain/trade-detail.type.ts";
-import type { TradeDetailInput } from "../application/trade-repository.interface.ts";
-import type { PlayerInfo } from "../domain/player-info.type.ts";
+import type { TradeEntity } from "../domain/entities/trade.entity.ts";
+import type { TradeDetailEntity } from "../domain/entities/trade-detail.entity.ts";
+import type { CreateTradeDetailProps } from "../application/types/create-trade-detail.type.ts";
+import type { UpdateTradeDetailProps } from "../application/types/update-trade-detail.type.ts";
 
 import { z } from "@hono/zod-openapi";
-import { TRADE_STATUS } from "../domain/trade-status.type.ts";
+import { TRADE_STATUS } from "../domain/types/trade-status.type.ts";
 
 class TradeMapper {
-  private addressSchema = z.object({
+  // ============================================================================
+  // Sub-schemas for nested objects
+  // ============================================================================
+
+  private fileSchema = z.object({
+    name: z.string(),
+    path: z.string(),
+    size: z.number(),
+  });
+
+  private linkSchema = z.object({
+    url: z.string(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+  });
+
+  private tradePlayerSchema = z.object({
+    name: z.string(),
+    phone: z.string(),
+    email: z.string(),
+  });
+
+  private tradeTimestampSchema = z.object({
+    createdAt: z.date(),
+    packagedAt: z.date().nullable(),
+    shippedAt: z.date().nullable(),
+    deliveredAt: z.date().nullable(),
+    cancelledAt: z.date().nullable(),
+    completedAt: z.date().nullable(),
+  });
+
+  private tradeAddressSchema = z.object({
     street: z.string(),
     city: z.string(),
     state: z.string(),
@@ -20,331 +51,266 @@ class TradeMapper {
     country: z.string(),
   });
 
-  private timestampSchema = z.object({
-    createdAt: z.preprocess(
-      (val) => (val === null ? new Date() : val),
-      z.coerce.date(),
-    ),
-    packagedAt: z.preprocess((val) => val ?? null, z.date().nullable()),
-    shippedAt: z.preprocess((val) => val ?? null, z.date().nullable()),
-    deliveredAt: z.preprocess((val) => val ?? null, z.date().nullable()),
-    cancelledAt: z.preprocess((val) => val ?? null, z.date().nullable()),
-    completedAt: z.preprocess((val) => val ?? null, z.date().nullable()),
-  });
-
-  private playerDataSchema = z.object({
+  private tradeItemEntitySchema = z.object({
+    id: z.number(),
     name: z.string(),
-    phone: z.string(),
-    email: z.string(),
+    price: z.number(),
+    sku: z.string().optional(),
   });
 
-  // File schema for JSON field
-  private fileSchema = z.object({
-    name: z.string(),
-    path: z.string(),
-    size: z.coerce.number(),
-  });
-
-  // Link schema for JSON field
-  private linkSchema = z.object({
-    url: z.string(),
-    title: z.string().optional(),
-    description: z.string().optional(),
-  });
-
-  // Player info schema for relationships
-  private playerInfoSchema = z.object({
+  private tradePlayerEntitySchema = z.object({
     id: z.number(),
     code: z.string().optional(),
     name: z.string(),
   });
 
-  // Item info schema for nested item in details
-  private itemInfoSchema = z.object({
-    id: z.number(),
-    name: z.string(),
-    sku: z.string().optional(),
-    cost: z.coerce.string(),
-    price: z.coerce.string(),
-  });
+  // ============================================================================
+  // Entity schemas (camelCase where applicable, undefined for optional, NO null values)
+  // ============================================================================
 
-  // Trade detail schema for entity transformation
-  private detailEntitySchema = z.object({
+  private tradeDetailEntitySchema: z.ZodType<TradeDetailEntity> = z.object({
     id: z.number(),
-    model_type: z.string(),
-    sku: z.string().optional(),
-    name: z.string().optional(),
-    quantity: z.coerce.number(),
-    price: z.coerce.number(),
-    discount: z.coerce.number(),
-    weight: z.coerce.number(),
-    debit: z.coerce.number(),
-    credit: z.coerce.number(),
+    modelId: z.number(),
+    modelType: z.string(),
+    detailType: z.string(),
+    item: this.tradeItemEntitySchema.optional(),
+    quantity: z.number(),
+    price: z.number(),
+    discount: z.number(),
+    weight: z.number(),
+    debit: z.number(),
+    credit: z.number(),
     notes: z.string().optional(),
-    item: this.itemInfoSchema.optional(),
+    createdAt: z.date().optional(),
+    updatedAt: z.date().optional(),
+    deletedAt: z.date().optional(),
   });
 
-  // Trade entity schema
-  private entitySchema = z.object({
+  // Base entity schema without conditional unions
+  private baseTradeEntitySchema = z.object({
     id: z.number(),
     number: z.string(),
-    space_id: z.number(),
-    status: z.union([z.string(), z.enum(TRADE_STATUS)]),
-    total: z.coerce.string(),
-    sent_time: z.coerce.date().optional(),
-    received_time: z.coerce.date().optional(),
-    sender_id: z.number().optional(),
-    receiver_id: z.number().optional(),
-    handler_id: z.number().optional(),
-    parent_id: z.number().optional(),
-    sender_notes: z.string().optional(),
-    receiver_notes: z.string().optional(),
-    handler_notes: z.string().optional(),
+    spaceId: z.number(),
+    status: z.enum(TRADE_STATUS),
+    total: z.string(),
     description: z.string().optional(),
-    fee: z.coerce.string().optional(),
+    fee: z.string().optional(),
     files: z.array(this.fileSchema).optional(),
     tags: z.array(z.string()).optional(),
     links: z.array(this.linkSchema).optional(),
-    details: z.array(this.detailEntitySchema).optional(),
-    children: z.array(z.any()).optional(),
-    sender: this.playerInfoSchema.optional(),
-    receiver: this.playerInfoSchema.optional(),
-    handler: this.playerInfoSchema.optional(),
-    players: this.playerDataSchema.optional(),
-    addresses: this.addressSchema.optional(),
-    timestamps: this.timestampSchema.optional(),
-    sku: z.string().optional(),
-    all_notes: z.string().optional(),
-    created_at: z.coerce.date().optional(),
-    updated_at: z.coerce.date().optional(),
-    deleted_at: z.coerce.date().optional(),
+    senderNotes: z.string().optional(),
+    receiverNotes: z.string().optional(),
+    handlerNotes: z.string().optional(),
+    players: this.tradePlayerSchema.optional(),
+    timestamps: this.tradeTimestampSchema.optional(),
+    addresses: this.tradeAddressSchema.optional(),
+    sentTime: z.date().optional(),
+    receivedTime: z.date().optional(),
+    createdAt: z.date().optional(),
+    updatedAt: z.date().optional(),
+    deletedAt: z.date().optional(),
   });
 
-  // Insertable schema for database
+  // Discriminated union schemas for conditional properties
+  private tradeWithChildrenSchema = z.object({
+    withChildren: z.literal(true),
+    children: z.array(z.lazy(() => this.tradeEntitySchema)),
+  }) as z.ZodType<{ withChildren: true; children: TradeEntity[] }>;
+
+  private tradeWithoutChildrenSchema = z.object({
+    withChildren: z.literal(false),
+    children: z.never(),
+  }) as z.ZodType<{ withChildren: false; children: never }>;
+
+  private tradeWithParentSchema = z.object({
+    withParent: z.literal(true),
+    parent: z.lazy(() => this.tradeEntitySchema).optional(),
+  }) as z.ZodType<{ withParent: true; parent?: TradeEntity }>;
+
+  private tradeWithoutParentSchema = z.object({
+    withParent: z.literal(false),
+    parent: z.never(),
+  }) as z.ZodType<{ withParent: false; parent: never }>;
+
+  private tradeWithPlayersSchema = z.object({
+    withPlayers: z.literal(true),
+    sender: this.tradePlayerEntitySchema.optional(),
+    receiver: this.tradePlayerEntitySchema.optional(),
+    handler: this.tradePlayerEntitySchema.optional(),
+  }) as z.ZodType<{
+    withPlayers: true;
+    sender?: { id: number; code?: string; name: string };
+    receiver?: { id: number; code?: string; name: string };
+    handler?: { id: number; code?: string; name: string };
+  }>;
+
+  private tradeWithoutPlayersSchema = z.object({
+    withPlayers: z.literal(false),
+    sender: z.never(),
+    receiver: z.never(),
+    handler: z.never(),
+  }) as z.ZodType<{
+    withPlayers: false;
+    sender: never;
+    receiver: never;
+    handler: never;
+  }>;
+
+  private tradeWithDetailsSchema = z.object({
+    withDetails: z.literal(true),
+    details: z.array(this.tradeDetailEntitySchema),
+  }) as z.ZodType<{ withDetails: true; details: TradeDetailEntity[] }>;
+
+  private tradeWithoutDetailsSchema = z.object({
+    withDetails: z.literal(false),
+    details: z.never(),
+  }) as z.ZodType<{ withDetails: false; details: never }>;
+
+  // Combined entity schema using intersections
+  private tradeEntitySchema: z.ZodType<TradeEntity> = z.intersection(
+    this.baseTradeEntitySchema,
+    z.intersection(
+      z.union([
+        this.tradeWithChildrenSchema,
+        this.tradeWithoutChildrenSchema,
+      ]),
+      z.intersection(
+        z.union([
+          this.tradeWithParentSchema,
+          this.tradeWithoutParentSchema,
+        ]),
+        z.intersection(
+          z.union([
+            this.tradeWithPlayersSchema,
+            this.tradeWithoutPlayersSchema,
+          ]),
+          z.union([
+            this.tradeWithDetailsSchema,
+            this.tradeWithoutDetailsSchema,
+          ]),
+        ),
+      ),
+    ),
+  );
+
+  // ============================================================================
+  // Persistence schemas (snake_case, null for optional, NO undefined values)
+  // ============================================================================
+
   private insertableSchema = z.object({
     space_id: z.number(),
-    sender_id: z.number().nullable(),
+    sender_id: z.number(),
+
+    number: z.string().nullable(),
+    status: z.string().nullable(),
     sent_time: z.date().nullable(),
     sender_notes: z.string().nullable(),
-    number: z.string().nullable(),
-    status: z.string(),
-    total: z.string(),
+
+    created_at: z.date().nullable(),
+    updated_at: z.date().nullable(),
   });
 
-  // Updateable schema for database
   private updateableSchema = z.object({
-    handler_type: z.string().optional(),
-    handler_id: z.number().nullable().optional(),
-    receiver_type: z.string().optional(),
-    receiver_id: z.number().nullable().optional(),
-    parent_type: z.string().nullable().optional(),
-    parent_id: z.number().nullable().optional(),
+    number: z.string().nullable().optional(),
+    sender_id: z.number().nullable().optional(),
     sent_time: z.date().nullable().optional(),
-    received_time: z.date().nullable().optional(),
     sender_notes: z.string().nullable().optional(),
-    receiver_notes: z.string().nullable().optional(),
-    handler_notes: z.string().nullable().optional(),
-    description: z.string().nullable().optional(),
     status: z.string().optional(),
     total: z.string().optional(),
+    receiver_id: z.number().nullable().optional(),
+    receiver_notes: z.string().nullable().optional(),
+    handler_id: z.number().nullable().optional(),
+    handler_notes: z.string().nullable().optional(),
+    parent_id: z.number().nullable().optional(),
+    description: z.string().nullable().optional(),
     fee: z.string().optional(),
-
-    // JSON fields
     files: z.string().nullable().optional(),
     tags: z.string().nullable().optional(),
     links: z.string().nullable().optional(),
-    players: z.string().nullable(),
-    timestamps: z.string().nullable(),
-    addresses: z.string().nullable(),
+    players: z.string().nullable().optional(),
+    timestamps: z.string().nullable().optional(),
+    addresses: z.string().nullable().optional(),
+    received_time: z.date().nullable().optional(),
   });
 
-  // Detail insertable schema
-  // Note: Decimal fields are coerced to numbers for database insertion
   private detailInsertableSchema = z.object({
     transaction_id: z.number(),
-    detail_type: z.string(),
-    detail_id: z.number().nullable(),
+    model_id: z.number(),
     model_type: z.string(),
+    detail_type: z.string(),
+    quantity: z.string(),
+    price: z.string(),
+    discount: z.string().nullable(),
+    weight: z.string().nullable(),
+    debit: z.string(),
+    credit: z.string(),
     sku: z.string().nullable(),
     name: z.string().nullable(),
-    quantity: z.coerce.number(),
-    price: z.coerce.number(),
-    discount: z.coerce.number().nullable(),
-    weight: z.coerce.number().nullable(),
-    debit: z.coerce.number(),
-    credit: z.coerce.number(),
     notes: z.string().nullable(),
   });
 
-  /**
-   * Transform trade entity to insertable database row
-   */
-  toInsertable(
-    entity: Partial<TradeEntity> & { space_id: number; sender_id: number },
-  ): Insertable<Transactions> {
-    const data = {
-      space_id: entity.space_id,
-      sender_id: entity.sender_id ?? null,
-      sent_time: entity.sent_time ?? null,
-      sender_notes: entity.sender_notes ?? null,
-      number: entity.number ?? null,
-      status: entity.status ?? "TX_DRAFT",
-      total: entity.total ?? "0",
-    };
-    return this.insertableSchema.parse(data);
+  private detailUpdateableSchema = z.object({
+    model_id: z.number().optional(),
+    model_type: z.string().optional(),
+    detail_type: z.string().optional(),
+    quantity: z.string().optional(),
+    price: z.string().optional(),
+    discount: z.string().nullable().optional(),
+    weight: z.string().nullable().optional(),
+    debit: z.string().optional(),
+    credit: z.string().optional(),
+    sku: z.string().nullable().optional(),
+    name: z.string().nullable().optional(),
+    notes: z.string().nullable().optional(),
+  });
+
+  // ============================================================================
+  // Helper methods for JSON parsing
+  // ============================================================================
+
+  private parseJsonField<T>(value: unknown): T | undefined {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+    if (typeof value === "string") {
+      try {
+        return JSON.parse(value) as T;
+      } catch {
+        return undefined;
+      }
+    }
+    return value as T;
   }
 
-  /**
-   * Transform partial trade entity to updateable database row
-   */
-  toUpdateable(entity: Partial<TradeEntity>): Updateable<Transactions> {
-    return this.toTransactionUpdateable(entity);
+  private stringifyJsonField<T>(value: T | undefined): string | null {
+    if (value === undefined) {
+      return null;
+    }
+    return JSON.stringify(value);
   }
 
-  /**
-   * Transform partial trade entity to updateable database row (transaction only, no details)
-   */
-  toTransactionUpdateable(
-    entity: Partial<TradeEntity>,
-  ): Updateable<Transactions> {
-    const data: Record<string, unknown> = {};
-
-    if (entity.handler_id !== undefined) {
-      data.handler_type = "PLAY";
-      data.handler_id = entity.handler_id ?? null;
-    }
-    if (entity.receiver_id !== undefined) {
-      data.receiver_type = "PLAY";
-      data.receiver_id = entity.receiver_id ?? null;
-    }
-    if (entity.parent_id !== undefined) {
-      data.parent_type = entity.parent_id ? "TX" : null;
-      data.parent_id = entity.parent_id ?? null;
-    }
-    if (entity.sent_time !== undefined) {
-      data.sent_time = entity.sent_time ?? null;
-    }
-    if (entity.received_time !== undefined) {
-      data.received_time = entity.received_time ?? null;
-    }
-    if (entity.sender_notes !== undefined) {
-      data.sender_notes = entity.sender_notes ?? null;
-    }
-    if (entity.receiver_notes !== undefined) {
-      data.receiver_notes = entity.receiver_notes ?? null;
-    }
-    if (entity.handler_notes !== undefined) {
-      data.handler_notes = entity.handler_notes ?? null;
-    }
-    if (entity.description !== undefined) {
-      data.description = entity.description ?? null;
-    }
-    if (entity.status !== undefined) {
-      data.status = entity.status;
-    }
-    if (entity.total !== undefined) {
-      data.total = entity.total;
-    }
-    if (entity.fee !== undefined) {
-      data.fee = entity.fee ?? undefined;
-    }
-    if (entity.files !== undefined) {
-      data.files = entity.files ? JSON.stringify(entity.files) : null;
-    }
-    if (entity.tags !== undefined) {
-      data.tags = entity.tags ? JSON.stringify(entity.tags) : null;
-    }
-    if (entity.links !== undefined) {
-      data.links = entity.links ? JSON.stringify(entity.links) : null;
-    }
-    if (entity.players !== undefined) {
-      data.players = entity.players ? JSON.stringify(entity.players) : null;
-    }
-    if (entity.timestamps !== undefined) {
-      data.timestamps = entity.timestamps
-        ? JSON.stringify(entity.timestamps)
-        : null;
-    }
-    if (entity.addresses !== undefined) {
-      data.addresses = entity.addresses
-        ? JSON.stringify(entity.addresses)
-        : null;
-    }
-
-    return this.updateableSchema.parse(data);
-  }
+  // ============================================================================
+  // Entity transformation methods
+  // ============================================================================
 
   /**
-   * Transform database row to trade entity
+   * Transform database row to trade entity (camelCase where applicable, no null values)
    */
   toEntity(row: Record<string, unknown>): TradeEntity {
     // Parse JSON fields
-    let files: TradeEntity["files"];
-    if (row.files) {
-      try {
-        files = typeof row.files === "string"
-          ? JSON.parse(row.files)
-          : row.files;
-      } catch {
-        files = undefined;
-      }
-    }
-
-    let tags: TradeEntity["tags"];
-    if (row.tags) {
-      try {
-        tags = typeof row.tags === "string" ? JSON.parse(row.tags) : row.tags;
-      } catch {
-        tags = undefined;
-      }
-    }
-
-    let links: TradeEntity["links"];
-    if (row.links) {
-      try {
-        links = typeof row.links === "string"
-          ? JSON.parse(row.links)
-          : row.links;
-      } catch {
-        links = undefined;
-      }
-    }
-
-    let players: TradeEntity["players"];
-    if (row.players) {
-      try {
-        players = typeof row.players === "string"
-          ? JSON.parse(row.players)
-          : row.players;
-      } catch {
-        players = undefined;
-      }
-    }
-
-    let timestamps: TradeEntity["timestamps"];
-    if (row.timestamps) {
-      try {
-        timestamps = typeof row.timestamps === "string"
-          ? JSON.parse(row.timestamps)
-          : row.timestamps;
-      } catch {
-        timestamps = undefined;
-      }
-    }
-
-    let addresses: TradeEntity["addresses"];
-    if (row.addresses) {
-      try {
-        addresses = typeof row.addresses === "string"
-          ? JSON.parse(row.addresses)
-          : row.addresses;
-      } catch {
-        addresses = undefined;
-      }
-    }
+    const files = this.parseJsonField<TradeEntity["files"]>(row.files);
+    const tags = this.parseJsonField<TradeEntity["tags"]>(row.tags);
+    const links = this.parseJsonField<TradeEntity["links"]>(row.links);
+    const players = this.parseJsonField<TradeEntity["players"]>(row.players);
+    const timestamps = this.parseJsonField<TradeEntity["timestamps"]>(
+      row.timestamps,
+    );
+    const addresses = this.parseJsonField<TradeEntity["addresses"]>(
+      row.addresses,
+    );
 
     // Transform details if present
-    let details: TradeDetailType[] | undefined;
+    let details: TradeDetailEntity[] | undefined;
     if (Array.isArray(row.details) && row.details.length > 0) {
       details = row.details.map((d: Record<string, unknown>) =>
         this.detailToEntity(d)
@@ -352,102 +318,242 @@ class TradeMapper {
     }
 
     // Transform children if present
-    let children: TradeEntity["children"];
+    let children: TradeEntity[] | undefined;
     if (Array.isArray(row.children) && row.children.length > 0) {
       children = row.children.map((c: Record<string, unknown>) =>
         this.toEntity(c)
       );
     }
 
+    // Transform parent if present
+    let parent: TradeEntity | undefined;
+    if (row.parent && typeof row.parent === "object") {
+      parent = this.toEntity(row.parent as Record<string, unknown>);
+    }
+
     // Transform player relationships if present
-    let sender: PlayerInfo | undefined;
+    let sender: TradeEntity["sender"] | undefined;
     if (row.sender && typeof row.sender === "object") {
       const s = row.sender as Record<string, unknown>;
-      if (s.id && s.name) {
-        sender = {
-          id: s.id as number,
-          code: (s.code as string) ?? undefined,
-          name: s.name as string,
-        };
-      }
+      sender = {
+        id: Number(s.id),
+        code: s.code ? String(s.code) : undefined,
+        name: String(s.name),
+      };
     }
 
-    let receiver: PlayerInfo | undefined;
+    let receiver: TradeEntity["receiver"] | undefined;
     if (row.receiver && typeof row.receiver === "object") {
       const r = row.receiver as Record<string, unknown>;
-      if (r.id && r.name) {
-        receiver = {
-          id: r.id as number,
-          code: (r.code as string) ?? undefined,
-          name: r.name as string,
-        };
-      }
+      receiver = {
+        id: Number(r.id),
+        code: r.code ? String(r.code) : undefined,
+        name: String(r.name),
+      };
     }
 
-    let handler: PlayerInfo | undefined;
+    let handler: TradeEntity["handler"] | undefined;
     if (row.handler && typeof row.handler === "object") {
       const h = row.handler as Record<string, unknown>;
-      if (h.id && h.name) {
-        handler = {
-          id: h.id as number,
-          code: (h.code as string) ?? undefined,
-          name: h.name as string,
-        };
-      }
+      handler = {
+        id: Number(h.id),
+        code: h.code ? String(h.code) : undefined,
+        name: String(h.name),
+      };
     }
 
-    // Compute all_notes (sender_notes + handler_notes)
-    const senderNotes = row.sender_notes as string | undefined;
-    const handlerNotes = row.handler_notes as string | undefined;
-    let all_notes: string | undefined;
-    if (senderNotes || handlerNotes) {
-      const parts = [senderNotes, handlerNotes].filter(Boolean);
-      all_notes = parts.join("\n");
-    }
+    // Determine conditional flags
+    const withChildren = children !== undefined && children.length > 0;
+    const withParent = parent !== undefined;
+    const withPlayers = sender !== undefined || receiver !== undefined ||
+      handler !== undefined;
+    const withDetails = details !== undefined && details.length > 0;
 
     const data = {
-      id: row.id,
-      number: row.number ?? "",
-      space_id: row.space_id,
-      status: row.status ?? "TX_DRAFT",
-      total: row.total ?? "0",
-      sent_time: row.sent_time ?? undefined,
-      received_time: row.received_time ?? undefined,
-      sender_id: row.sender_id ?? undefined,
-      receiver_id: row.receiver_id ?? undefined,
-      handler_id: row.handler_id ?? undefined,
-      parent_id: row.parent_id ?? undefined,
-      sender_notes: row.sender_notes ?? undefined,
-      receiver_notes: row.receiver_notes ?? undefined,
-      handler_notes: row.handler_notes ?? undefined,
-      description: row.description ?? undefined,
-      fee: row.fee ?? undefined,
+      id: Number(row.id),
+      number: String(row.number ?? ""),
+      spaceId: Number(row.space_id ?? 0),
+      status: String(row.status ?? "TX_DRAFT"),
+      total: String(row.total ?? "0"),
+      description: row.description ? String(row.description) : undefined,
+      fee: row.fee ? String(row.fee) : undefined,
       files,
       tags,
       links,
+      senderNotes: row.sender_notes ? String(row.sender_notes) : undefined,
+      receiverNotes: row.receiver_notes
+        ? String(row.receiver_notes)
+        : undefined,
+      handlerNotes: row.handler_notes ? String(row.handler_notes) : undefined,
       players,
       timestamps,
       addresses,
-      details,
-      children,
-      sender,
-      receiver,
-      handler,
-      all_notes,
-      created_at: row.created_at ?? undefined,
-      updated_at: row.updated_at ?? undefined,
-      deleted_at: row.deleted_at ?? undefined,
+      sentTime: row.sent_time ? new Date(String(row.sent_time)) : undefined,
+      receivedTime: row.received_time
+        ? new Date(String(row.received_time))
+        : undefined,
+      createdAt: row.created_at ? new Date(String(row.created_at)) : undefined,
+      updatedAt: row.updated_at ? new Date(String(row.updated_at)) : undefined,
+      deletedAt: row.deleted_at ? new Date(String(row.deleted_at)) : undefined,
+      withChildren,
+      children: withChildren ? children : undefined,
+      withParent,
+      parent: withParent ? parent : undefined,
+      withPlayers,
+      sender: withPlayers ? sender : undefined,
+      receiver: withPlayers ? receiver : undefined,
+      handler: withPlayers ? handler : undefined,
+      withDetails,
+      details: withDetails ? details : undefined,
     };
 
-    return this.entitySchema.parse(data);
+    return this.tradeEntitySchema.parse(data);
   }
 
   /**
-   * Transform trade detail input to insertable database row
+   * Transform trade entity to insertable database row (snake_case, no undefined values)
+   */
+  toInsertable(
+    entity: {
+      spaceId: number;
+      senderId: number;
+      sentTime?: Date;
+      senderNotes?: string;
+      number?: string;
+      status?: string;
+      createdAt?: Date;
+      updatedAt?: Date;
+    },
+  ): Insertable<Transactions> {
+    const data = {
+      space_id: entity.spaceId,
+      sender_id: entity.senderId,
+      sent_time: entity.sentTime ?? null,
+      sender_notes: entity.senderNotes ?? null,
+      number: entity.number ?? null,
+      status: entity.status ?? null,
+      created_at: entity.createdAt ?? null,
+      updated_at: entity.updatedAt ?? null,
+    };
+
+    return this.insertableSchema.parse(data) as Insertable<Transactions>;
+  }
+
+  /**
+   * Transform partial trade entity to updateable database row (snake_case, no undefined values)
+   */
+  toUpdateable(entity: Partial<TradeEntity>): Updateable<Transactions> {
+    const data: Record<string, unknown> = {};
+
+    if (entity.handlerId !== undefined) {
+      data.handler_id = entity.handlerId;
+    }
+    if (entity.receiverId !== undefined) {
+      data.receiver_id = entity.receiverId;
+    }
+    if (entity.parentId !== undefined) {
+      data.parent_id = entity.parentId;
+    }
+
+    if (entity.number !== undefined) {
+      data.number = entity.number;
+    }
+    if (entity.status !== undefined) {
+      data.status = entity.status;
+    }
+    if (entity.total !== undefined) {
+      data.total = entity.total;
+    }
+    if (entity.description !== undefined) {
+      data.description = entity.description;
+    }
+    if (entity.fee !== undefined) {
+      data.fee = entity.fee;
+    }
+    if (entity.files !== undefined) {
+      data.files = this.stringifyJsonField(entity.files);
+    }
+    if (entity.tags !== undefined) {
+      data.tags = this.stringifyJsonField(entity.tags);
+    }
+    if (entity.links !== undefined) {
+      data.links = this.stringifyJsonField(entity.links);
+    }
+    if (entity.players !== undefined) {
+      data.players = this.stringifyJsonField(entity.players);
+    }
+    if (entity.timestamps !== undefined) {
+      data.timestamps = this.stringifyJsonField(entity.timestamps);
+    }
+    if (entity.addresses !== undefined) {
+      data.addresses = this.stringifyJsonField(entity.addresses);
+    }
+    if (entity.senderNotes !== undefined) {
+      data.sender_notes = entity.senderNotes;
+    }
+    if (entity.receiverNotes !== undefined) {
+      data.receiver_notes = entity.receiverNotes;
+    }
+    if (entity.handlerNotes !== undefined) {
+      data.handler_notes = entity.handlerNotes;
+    }
+    if (entity.sentTime !== undefined) {
+      data.sent_time = entity.sentTime;
+    }
+    if (entity.receivedTime !== undefined) {
+      data.received_time = entity.receivedTime;
+    }
+
+    return this.updateableSchema.parse(data) as Updateable<Transactions>;
+  }
+
+  // ============================================================================
+  // Detail transformation methods
+  // ============================================================================
+
+  /**
+   * Transform database row to trade detail entity (camelCase, no null values)
+   */
+  detailToEntity(row: Record<string, unknown>): TradeDetailEntity {
+    // Transform item if present
+    let item: TradeDetailEntity["item"] | undefined;
+    if (row.item && typeof row.item === "object") {
+      const i = row.item as Record<string, unknown>;
+      item = {
+        id: Number(i.id),
+        name: String(i.name),
+        price: Number(i.price),
+        sku: i.sku ? String(i.sku) : undefined,
+      };
+    }
+
+    const data = {
+      id: Number(row.id),
+      modelId: Number(row.model_id ?? 0),
+      modelType: String(row.model_type ?? ""),
+      detailType: String(row.detail_type ?? ""),
+      item,
+      quantity: Number(row.quantity ?? 0),
+      price: Number(row.price ?? 0),
+      discount: Number(row.discount ?? 0),
+      weight: Number(row.weight ?? 0),
+      debit: Number(row.debit ?? 0),
+      credit: Number(row.credit ?? 0),
+      notes: row.notes ? String(row.notes) : undefined,
+      createdAt: row.created_at ? new Date(String(row.created_at)) : undefined,
+      updatedAt: row.updated_at ? new Date(String(row.updated_at)) : undefined,
+      deletedAt: row.deleted_at ? new Date(String(row.deleted_at)) : undefined,
+    };
+
+    return this.tradeDetailEntitySchema.parse(data);
+  }
+
+  /**
+   * Transform trade detail input to insertable database row (snake_case, no undefined values)
    */
   detailToInsertable(
     transactionId: number,
-    detail: TradeDetailInput,
+    detail: CreateTradeDetailProps,
   ): Insertable<TransactionDetails> {
     // Calculate debit and credit based on quantity
     const quantity = detail.quantity;
@@ -456,99 +562,65 @@ class TradeMapper {
 
     const data = {
       transaction_id: transactionId,
+      model_id: detail.itemId,
+      model_type: detail.modelType,
       detail_type: "ITM",
-      detail_id: detail.item_id ?? null,
-      model_type: detail.model_type,
+      quantity: String(detail.quantity),
+      price: String(detail.price),
+      discount: detail.discount !== undefined ? String(detail.discount) : null,
+      weight: detail.weight !== undefined ? String(detail.weight) : null,
+      debit: String(debit),
+      credit: String(credit),
       sku: detail.sku ?? null,
       name: detail.name ?? null,
-      quantity: detail.quantity,
-      price: detail.price,
-      discount: detail.discount ?? 0,
-      weight: detail.weight ?? 0,
-      debit,
-      credit,
       notes: detail.notes ?? null,
     };
 
-    return this.detailInsertableSchema.parse(data);
+    return this.detailInsertableSchema.parse(
+      data,
+    ) as Insertable<TransactionDetails>;
   }
 
   /**
-   * Transform partial detail data to updateable database row
-   * Excludes immutable linking fields (transaction_id, detail_type, detail_id)
+   * Transform partial detail data to updateable database row (snake_case, no undefined values)
    */
   detailToUpdateable(
-    detail: Partial<Omit<TradeDetailInput, "item_id">>,
+    detail: UpdateTradeDetailProps,
   ): Updateable<TransactionDetails> {
     const data: Record<string, unknown> = {};
 
-    if (detail.model_type !== undefined) {
-      data.model_type = detail.model_type;
-    }
-    if (detail.sku !== undefined) {
-      data.sku = detail.sku ?? null;
-    }
-    if (detail.name !== undefined) {
-      data.name = detail.name ?? null;
+    if (detail.modelType !== undefined) {
+      data.model_type = detail.modelType;
     }
     if (detail.quantity !== undefined) {
-      data.quantity = detail.quantity;
+      data.quantity = String(detail.quantity);
       // Recalculate debit/credit when quantity changes
       const quantity = detail.quantity;
-      data.debit = quantity >= 0 ? quantity : 0;
-      data.credit = quantity < 0 ? Math.abs(quantity) : 0;
+      data.debit = String(quantity >= 0 ? quantity : 0);
+      data.credit = String(quantity < 0 ? Math.abs(quantity) : 0);
     }
     if (detail.price !== undefined) {
-      data.price = detail.price;
+      data.price = String(detail.price);
     }
     if (detail.discount !== undefined) {
-      data.discount = detail.discount ?? null;
+      data.discount = String(detail.discount);
     }
     if (detail.weight !== undefined) {
-      data.weight = detail.weight ?? null;
+      data.weight = String(detail.weight);
+    }
+    if (detail.sku !== undefined) {
+      data.sku = detail.sku;
+    }
+    if (detail.name !== undefined) {
+      data.name = detail.name;
     }
     if (detail.notes !== undefined) {
-      data.notes = detail.notes ?? null;
+      data.notes = detail.notes;
     }
 
-    return data as Updateable<TransactionDetails>;
-  }
-
-  /**
-   * Transform database row to trade detail entity
-   */
-  detailToEntity(row: Record<string, unknown>): TradeDetailType {
-    // Transform item if present
-    let item: TradeDetailType["item"] = undefined;
-    if (row.item && typeof row.item === "object") {
-      const i = row.item as Record<string, unknown>;
-      if (i.id && i.name) {
-        item = {
-          id: i.id as number,
-          name: i.name as string,
-          sku: (i.sku as string) ?? undefined,
-          cost: (i.cost as string) ?? "0",
-          price: (i.price as string) ?? "0",
-        };
-      }
-    }
-
-    const data = {
-      id: row.id,
-      model_type: row.model_type ?? "UNDF",
-      sku: row.sku ?? undefined,
-      name: row.name ?? undefined,
-      quantity: row.quantity ?? "0",
-      price: row.price ?? "0",
-      discount: row.discount ?? "0",
-      weight: row.weight ?? "0",
-      debit: row.debit ?? "0",
-      credit: row.credit ?? "0",
-      notes: row.notes ?? undefined,
-      item,
-    };
-
-    return this.detailEntitySchema.parse(data);
+    return this.detailUpdateableSchema.parse(
+      data,
+    ) as Updateable<TransactionDetails>;
   }
 }
 
