@@ -1,6 +1,7 @@
 /**
  * Valid trade status values.
  * TX_DRAFT - Initial draft state
+ * TX_REQUEST - Requested trade
  * TX_READY - Ready for processing
  * TX_SENT - Sent to receiver
  * TX_RECEIVED - Received by receiver
@@ -11,6 +12,7 @@
  */
 const TRADE_STATUS = [
   "TX_DRAFT",
+  "TX_REQUEST",
   "TX_READY",
   "TX_SENT",
   "TX_RECEIVED",
@@ -20,9 +22,7 @@ const TRADE_STATUS = [
   "TX_CLOSED",
 ] as const;
 
-type TradeStatusType =
-  | string
-  | (typeof TRADE_STATUS)[number];
+type TradeStatusType = (typeof TRADE_STATUS)[number];
 
 export { TRADE_STATUS };
 export type { TradeStatusType };
